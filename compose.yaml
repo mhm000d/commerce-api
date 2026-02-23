@@ -1,0 +1,7 @@
+﻿services:
+  commerce.api:
+    image: commerce.api
+    build:
+      context: .
+      dockerfile: Commerce.Api/Dockerfile
+
