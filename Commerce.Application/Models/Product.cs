@@ -1,0 +1,2 @@
+namespace Commerce.Application.Models;
+
