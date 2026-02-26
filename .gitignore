@@ -3,3 +3,21 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+.env
+
+Commerce.Api/appsettings.json
+
+# Build outputs
+*.dll
+*.deps.json
+
+# Visual Studio data sources
+*.xml
+
+*.DotSettings.user
+.idea/
+*.exe
+*.suo
+*.user
+*.config
+*.runtimeconfig.json
