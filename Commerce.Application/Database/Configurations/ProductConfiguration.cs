@@ -21,7 +21,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasMaxLength(200);
 
         builder.Property(p => p.Description)
-            .IsRequired(true);
+            .IsRequired();
 
         builder.Property(p => p.Price)
             .IsRequired()
@@ -85,11 +85,11 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasDatabaseName("IX_Product_AverageRating");
 
         // ── Relationships ─────────────────────────────────────────────
-        // builder.HasMany(p => p.Images)
-        //     .WithOne(pi => pi.Product)
-        //     .HasForeignKey(pi => pi.ProductId)
-        //     .OnDelete(DeleteBehavior.Cascade);
-        //
+        builder.HasMany(p => p.Images)
+            .WithOne(pi => pi.Product)
+            .HasForeignKey(pi => pi.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
         // builder.HasMany(p => p.Ratings)
         //     .WithOne(r => r.Product)
         //     .HasForeignKey(r => r.ProductId)

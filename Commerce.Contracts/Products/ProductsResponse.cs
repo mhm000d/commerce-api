@@ -4,6 +4,6 @@ public record ProductsResponse(
     Guid Id,
     string Name,
     decimal Price,
-    decimal? AverageRating
-    // Images
+    decimal? AverageRating,
+    IReadOnlyList<ProductImageResponse> Images
 );

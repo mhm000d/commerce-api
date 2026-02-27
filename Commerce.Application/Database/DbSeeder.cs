@@ -10,6 +10,7 @@ public static class DbSeeder
         if (await context.Products.AnyAsync())
             return;
 
+        // ── Products ──────────────────────────────────────────────────
         context.Products.AddRange(
             new Product
             {
@@ -70,6 +71,37 @@ public static class DbSeeder
                 RatingCount = 500,
                 IsDeleted = false,
                 CreatedAt = DateTimeOffset.UtcNow
+            }
+        );
+
+        // ── ProductImages ──────────────────────────────────────────────────
+        context.ProductImages.AddRange(
+            new ProductImage
+            {
+                Id = Guid.NewGuid(),
+                ImageUrl = "htts://source.co/image",
+                IsPrimary = true,
+                DisplayOrder = 0,
+                CreatedAt = DateTimeOffset.UtcNow,
+                ProductId = Guid.Parse("33333333-3333-3333-3333-333333333333")
+            },
+            new ProductImage
+            {
+                Id = Guid.NewGuid(),
+                ImageUrl = "htts://source.co/image",
+                IsPrimary = true,
+                DisplayOrder = 1,
+                CreatedAt = DateTimeOffset.UtcNow,
+                ProductId = Guid.Parse("33333333-3333-3333-3333-333333333333")
+            },
+            new ProductImage
+            {
+                Id = Guid.NewGuid(),
+                ImageUrl = "htts://source.co/image",
+                IsPrimary = true,
+                DisplayOrder = 0,
+                CreatedAt = DateTimeOffset.UtcNow,
+                ProductId = Guid.Parse("22222222-2222-2222-2222-222222222222")
             }
         );
 

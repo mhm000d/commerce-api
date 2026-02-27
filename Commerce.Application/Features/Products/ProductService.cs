@@ -6,13 +6,19 @@ namespace Commerce.Application.Features.Products;
 
 public class ProductService(AppDbContext context) : IProductService
 {
-    public Task<Product?> GetAsync(Guid id)
+    public async Task<Product?> GetAsync(Guid id)
     {
-        return context.Products.FirstOrDefaultAsync(p => p.Id == id);
+        return await context.Products
+            .AsNoTracking()
+            .Include(p => p.Images)
+            .FirstOrDefaultAsync(p => p.Id == id);
     }
 
     public async Task<IEnumerable<Product>> GetAllAsync()
     {
-        return await context.Products.ToListAsync();
+        return await context.Products
+            .AsNoTracking()
+            .Include(p => p.Images)
+            .ToListAsync();
     }
 }

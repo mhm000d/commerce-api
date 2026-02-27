@@ -89,6 +89,42 @@ namespace Commerce.Application.Database.Migrations
                     b.ToTable("Products", (string)null);
                 });
 
+            modelBuilder.Entity("Commerce.Application.Models.ProductImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("DisplayOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<bool>("IsPrimary")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId", "DisplayOrder")
+                        .HasDatabaseName("IX_ProductImage_ProductId");
+
+                    b.ToTable("ProductImages", (string)null);
+                });
+
             modelBuilder.Entity("Commerce.Application.Models.Product", b =>
                 {
                     b.OwnsMany("Commerce.Application.Models.ProductSpecification", "Specifications", b1 =>
@@ -117,6 +153,22 @@ namespace Commerce.Application.Database.Migrations
                         });
 
                     b.Navigation("Specifications");
+                });
+
+            modelBuilder.Entity("Commerce.Application.Models.ProductImage", b =>
+                {
+                    b.HasOne("Commerce.Application.Models.Product", "Product")
+                        .WithMany("Images")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Commerce.Application.Models.Product", b =>
+                {
+                    b.Navigation("Images");
                 });
 #pragma warning restore 612, 618
         }

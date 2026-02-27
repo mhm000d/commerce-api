@@ -16,6 +16,13 @@ public static class ProductMappings
             product.AverageRating,
             product.RatingCount,
             (Contracts.Products.Category)product.Category,
+            product.Images
+                .Select(i => new ProductImageResponse(
+                    i.Id,
+                    i.ImageUrl,
+                    i.IsPrimary,
+                    i.DisplayOrder)
+                ).ToList(),
             product.Specifications
                 .Select(s => new Contracts.Products.ProductSpecification(s.Key, s.Value))
                 .ToList()
@@ -29,7 +36,16 @@ public static class ProductMappings
                 p.Id,
                 p.Name,
                 p.Price,
-                p.AverageRating
+                p.AverageRating,
+                p.Images
+                    .OrderBy(i => i.DisplayOrder)
+                    .Take(2)
+                    .Select(i => new ProductImageResponse(
+                        i.Id,
+                        i.ImageUrl,
+                        i.IsPrimary,
+                        i.DisplayOrder)
+                    ).ToList()
             )
         );
     }

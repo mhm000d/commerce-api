@@ -1,3 +1,5 @@
+using System.Collections;
+
 namespace Commerce.Contracts.Products;
 
 public record ProductResponse(
@@ -9,7 +11,8 @@ public record ProductResponse(
     decimal? AverageRating,
     int RatingCount,
     Category Category,
-    List<ProductSpecification> Specifications
+    IReadOnlyList<ProductImageResponse> Images,
+    IReadOnlyList<ProductSpecification> Specifications
 );
 
 public record ProductSpecification(string Key, string Value);
@@ -18,5 +21,6 @@ public enum Category
 {
     Televisions,
     Laptops,
-    Games
+    Games,
+    Other
 }
