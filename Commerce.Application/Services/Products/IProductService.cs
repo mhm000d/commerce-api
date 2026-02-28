@@ -1,6 +1,6 @@
 using Commerce.Application.Models;
 
-namespace Commerce.Application.Features.Products;
+namespace Commerce.Application.Services.Products;
 
 public interface IProductService
 {

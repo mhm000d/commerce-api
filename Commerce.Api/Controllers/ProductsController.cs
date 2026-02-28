@@ -1,6 +1,5 @@
 using Commerce.Api.Mappings;
-using Commerce.Application.Features.Products;
-using Commerce.Contracts.Products;
+using Commerce.Application.Services.Products;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commerce.Api.Controllers;

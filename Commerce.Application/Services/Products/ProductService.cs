@@ -2,7 +2,7 @@ using Commerce.Application.Database;
 using Commerce.Application.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Commerce.Application.Features.Products;
+namespace Commerce.Application.Services.Products;
 
 public class ProductService(AppDbContext context) : IProductService
 {

@@ -1,5 +1,5 @@
 using Commerce.Application.Database;
-using Commerce.Application.Features.Products;
+using Commerce.Application.Services.Products;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
