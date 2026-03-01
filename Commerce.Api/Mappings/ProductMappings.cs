@@ -19,6 +19,7 @@ public static class ProductMappings
             product.Images
                 .Select(i => new ProductImageResponse(
                     i.Id,
+                    i.ProductId,
                     i.ImageUrl,
                     i.IsPrimary,
                     i.DisplayOrder)
@@ -42,6 +43,7 @@ public static class ProductMappings
                     .Take(2)
                     .Select(i => new ProductImageResponse(
                         i.Id,
+                        i.ProductId,
                         i.ImageUrl,
                         i.IsPrimary,
                         i.DisplayOrder)
