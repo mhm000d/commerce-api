@@ -31,6 +31,10 @@ public class ProductImageConfiguration : IEntityTypeConfiguration<ProductImage>
         builder.Property(pi => pi.DisplayOrder)
             .IsRequired()
             .HasDefaultValue(0);
+        
+        builder.Property(e => e.ContentHash)
+            .IsRequired()
+            .HasMaxLength(64); // SHA-256 = 64 hex chars
 
         builder.Property(pi => pi.CreatedAt)
             .IsRequired()
@@ -42,5 +46,10 @@ public class ProductImageConfiguration : IEntityTypeConfiguration<ProductImage>
         // ── Indexes ──────────────────────────────────────────────────
         builder.HasIndex(pi => new { pi.ProductId, pi.DisplayOrder })
             .HasDatabaseName("IX_ProductImage_ProductId");
+        
+        // Prevent same image being uploaded to the same product twice
+        builder.HasIndex(e => new { e.ProductId, e.ContentHash })
+            .IsUnique()
+            .HasDatabaseName("IX_ProductImage_ProductId_ContentHash");
     }
 }

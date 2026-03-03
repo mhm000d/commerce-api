@@ -82,6 +82,7 @@ public static class DbSeeder
                 ImageUrl = "htts://source.co/image",
                 IsPrimary = true,
                 DisplayOrder = 0,
+                ContentHash = "111",
                 CreatedAt = DateTimeOffset.UtcNow,
                 ProductId = Guid.Parse("33333333-3333-3333-3333-333333333333")
             },
@@ -91,6 +92,7 @@ public static class DbSeeder
                 ImageUrl = "htts://source.co/image",
                 IsPrimary = true,
                 DisplayOrder = 1,
+                ContentHash = "222",
                 CreatedAt = DateTimeOffset.UtcNow,
                 ProductId = Guid.Parse("33333333-3333-3333-3333-333333333333")
             },
@@ -100,6 +102,7 @@ public static class DbSeeder
                 ImageUrl = "htts://source.co/image",
                 IsPrimary = true,
                 DisplayOrder = 0,
+                ContentHash = "333",
                 CreatedAt = DateTimeOffset.UtcNow,
                 ProductId = Guid.Parse("22222222-2222-2222-2222-222222222222")
             }

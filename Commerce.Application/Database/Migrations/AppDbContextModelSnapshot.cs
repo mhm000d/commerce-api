@@ -94,6 +94,11 @@ namespace Commerce.Application.Database.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -118,6 +123,10 @@ namespace Commerce.Application.Database.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProductId", "ContentHash")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ProductImage_ProductId_ContentHash");
 
                     b.HasIndex("ProductId", "DisplayOrder")
                         .HasDatabaseName("IX_ProductImage_ProductId");
