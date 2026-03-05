@@ -1,17 +1,16 @@
 using Commerce.Api.Mappings;
 using Commerce.Application.Services.ProductImages;
-using Commerce.Contracts.Products;
+using Commerce.Contracts.ProductImages;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commerce.Api.Controllers;
 
 [ApiController]
-[Route("api/products/{productId:guid}/images")]
 public class ProductImagesController(
     IProductImageService productImageService) : ControllerBase
 {
-    [HttpPost]
-    public async Task<ActionResult<ProductImageResponse>> UploadImage(
+    [HttpPost(ApiEndpoints.Admin.PostImage)]
+    public async Task<ActionResult<ProductImageResponse>> PostImage(
         Guid productId,
         [FromForm(Name = "image")] IFormFile image)
     {
@@ -29,21 +28,21 @@ public class ProductImagesController(
         );
     }
 
-    [HttpGet("{imageId:guid}")]
+    [HttpGet(ApiEndpoints.ProductImages.GetImage)]
     public async Task<ActionResult<ProductImageResponse>> GetImage(Guid productId, Guid imageId)
     {
         var productImage = await productImageService.GetAsync(productId, imageId);
         return productImage.ToResponse();
     }
 
-    [HttpDelete("{imageId:guid}")]
+    [HttpDelete(ApiEndpoints.Admin.DeleteImage)]
     public async Task<IActionResult> DeleteImage(Guid productId, Guid imageId)
     {
         await productImageService.DeleteAsync(productId, imageId);
         return NoContent();
     }
 
-    [HttpPut("{imageId:guid}/set-primary")]
+    [HttpPut(ApiEndpoints.Admin.SetPrimary)]
     public async Task<IActionResult> SetPrimaryImage(Guid productId, Guid imageId)
     {
         await productImageService.SetPrimaryAsync(productId, imageId);
