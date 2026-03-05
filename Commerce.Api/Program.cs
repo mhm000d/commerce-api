@@ -4,6 +4,8 @@ using Commerce.Application.Database;
 using Commerce.Application.Services.ProductImages;
 using Commerce.Application.Services.Products;
 using Commerce.Application.Services.Storages;
+using Commerce.Application.Validators;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +23,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductImageService, ProductImageService>();
+builder.Services.AddValidatorsFromAssemblyContaining<ProductValidator>();
 // AWS S3
 builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
 builder.Services.AddAWSService<IAmazonS3>();

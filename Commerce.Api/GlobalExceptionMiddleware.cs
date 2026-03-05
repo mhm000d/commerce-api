@@ -16,10 +16,30 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
             logger.LogWarning(ex, "Domain exception [{Code}]", ex.Code);
             await WriteErrorAsync(context, ex.StatusCode, ex.Message, ex.Code, ex.Details);
         }
+
         catch (DbUpdateConcurrencyException ex)
         {
             logger.LogWarning(ex, "Concurrency conflict");
             await WriteErrorAsync(context, 409, "A conflict occurred, please retry.", "CONCURRENCY_CONFLICT");
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            logger.LogWarning("Validation failed");
+
+            var errors = ex.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(e => e.ErrorMessage).ToArray()
+                );
+
+            await WriteErrorAsync(
+                context,
+                StatusCodes.Status400BadRequest,
+                "Validation failed.",
+                "VALIDATION_ERROR",
+                errors
+            );
         }
         catch (Exception ex)
         {
