@@ -1,4 +1,5 @@
 using Commerce.Application.Models;
+using Commerce.Contracts.ProductImages;
 using Commerce.Contracts.Products;
 
 namespace Commerce.Api.Mappings;

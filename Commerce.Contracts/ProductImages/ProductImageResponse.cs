@@ -1,4 +1,4 @@
-namespace Commerce.Contracts.Products;
+namespace Commerce.Contracts.ProductImages;
 
 public record ProductImageResponse(
     Guid Id,
