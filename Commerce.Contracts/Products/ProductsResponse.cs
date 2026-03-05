@@ -1,3 +1,5 @@
+using Commerce.Contracts.ProductImages;
+
 namespace Commerce.Contracts.Products;
 
 public record ProductsResponse(
