@@ -1,11 +1,6 @@
-using Amazon.S3;
 using Commerce.Api;
+using Commerce.Application;
 using Commerce.Application.Database;
-using Commerce.Application.Services.ProductImages;
-using Commerce.Application.Services.Products;
-using Commerce.Application.Services.Storages;
-using Commerce.Application.Validators;
-using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,19 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
-// Configure DbContext
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection"))
-    );
-
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IProductImageService, ProductImageService>();
-builder.Services.AddValidatorsFromAssemblyContaining<ProductValidator>();
-// AWS S3
-builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
-builder.Services.AddAWSService<IAmazonS3>();
-builder.Services.AddScoped<IStorageService, StorageService>();
+builder.Services.AddDatabase(builder.Configuration);
+builder.Services.AddApplication(builder.Configuration);
+builder.Services.AddAuthServices(builder.Configuration);
 
 var app = builder.Build();
 
@@ -39,11 +24,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
     await dbContext.Database.MigrateAsync();
