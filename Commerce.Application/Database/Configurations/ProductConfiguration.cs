@@ -91,19 +91,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasForeignKey(pi => pi.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
         
-        // builder.HasMany(p => p.Ratings)
-        //     .WithOne(r => r.Product)
-        //     .HasForeignKey(r => r.ProductId)
-        //     .OnDelete(DeleteBehavior.Cascade);
-        //
-        // builder.HasMany(p => p.CartItems)
-        //     .WithOne(ci => ci.Product)
-        //     .HasForeignKey(ci => ci.ProductId)
-        //     .OnDelete(DeleteBehavior.Restrict);   // prevent delete of product in active carts.
-        //
-        // builder.HasMany(p => p.OrderItems)
-        //     .WithOne(oi => oi.Product)
-        //     .HasForeignKey(oi => oi.ProductId)
-        //     .OnDelete(DeleteBehavior.Restrict);   // preserve order history
+        builder.HasMany(p => p.Ratings)
+            .WithOne(r => r.Product)
+            .HasForeignKey(r => r.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

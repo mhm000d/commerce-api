@@ -13,6 +13,7 @@ public class User
     // ── Navigation Properties ─────────────────────────────────────────────────
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = [];
     public ICollection<PasswordResetToken> PasswordResetTokens { get; private set; } = [];
+    public ICollection<Rating> Ratings { get; private set; } = [];
 
     // ── Factory ───────────────────────────────────────────────────────────────
     public static User Create(string name, string email, string rawPassword, string? phone = null)
