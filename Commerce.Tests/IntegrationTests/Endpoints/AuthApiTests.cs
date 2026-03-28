@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Commerce.Contracts.Auth;
 using Commerce.Tests.IntegrationTests.Infrastructure;
@@ -6,21 +7,30 @@ using Shouldly;
 
 namespace Commerce.Tests.IntegrationTests.Endpoints;
 
-public sealed class AuthApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
+public sealed class AuthApiTests(ApiFactory factory)
+    : IClassFixture<ApiFactory>, IAsyncLifetime
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private HttpClient _client = null!;
+
+    // Reset DB + create a fresh client before every test so
+    // DefaultRequestHeaders never bleed between tests.
+    public async Task InitializeAsync()
+    {
+        await factory.ResetDatabaseAsync();
+        _client = factory.CreateClient();
+    }
+
+    public Task DisposeAsync()
+    {
+        _client.Dispose();
+        return Task.CompletedTask;
+    }
 
     [Fact]
     public async Task Register_Returns201_AndTokens()
     {
-        var request = new RegisterRequest(
-            Name: "Adam Hassan",
-            Email: "adam@example.com", /*"ahmed_register@example.com",*/
-            Password: "Password1",
-            Phone: null
-        );
-
-        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
+        var response = await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest("Adam Hassan", "adam@example.com", "Password1", Phone: null));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
 
@@ -34,11 +44,11 @@ public sealed class AuthApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Login_Returns200_AndTokens()
     {
-        await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(
-            "Adam Hassan", "adam@example.com", "Password1", Phone: null));
+        await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest("Adam Hassan", "adam@example.com", "Password1", Phone: null));
 
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(
-            "adam@example.com", "Password1"));
+        var response = await _client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest("adam@example.com", "Password1"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -49,16 +59,16 @@ public sealed class AuthApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task LogoutAll_RequiresBearerToken()
+    public async Task LogoutAll_RequiresBearerToken_Returns204()
     {
-        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(
-            "Adam Hassan", "adm@example.com", "Password1", Phone: null));
+        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest("Adam Hassan", "adam@example.com", "Password1", Phone: null));
 
         var registerBody = await registerResponse.Content.ReadFromJsonAsync<AuthResponse>();
         registerBody.ShouldNotBeNull();
 
         _client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", registerBody.AccessToken);
+            new AuthenticationHeaderValue("Bearer", registerBody.AccessToken);
 
         var response = await _client.PostAsync("/api/auth/logout-all", content: null);
 
