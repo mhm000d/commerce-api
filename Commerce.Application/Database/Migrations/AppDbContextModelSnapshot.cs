@@ -171,6 +171,44 @@ namespace Commerce.Application.Database.Migrations
                     b.ToTable("ProductImages", (string)null);
                 });
 
+            modelBuilder.Entity("Commerce.Application.Models.Rating", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("IX_Rating_ProductId");
+
+                    b.HasIndex("UserId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Rating_UserId_ProductId");
+
+                    b.ToTable("Ratings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Rating_Score", "\"Score\" BETWEEN 1 AND 5");
+                        });
+                });
+
             modelBuilder.Entity("Commerce.Application.Models.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -316,6 +354,25 @@ namespace Commerce.Application.Database.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Commerce.Application.Models.Rating", b =>
+                {
+                    b.HasOne("Commerce.Application.Models.Product", "Product")
+                        .WithMany("Ratings")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Commerce.Application.Models.User", "User")
+                        .WithMany("Ratings")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Commerce.Application.Models.RefreshToken", b =>
                 {
                     b.HasOne("Commerce.Application.Models.User", "User")
@@ -330,11 +387,15 @@ namespace Commerce.Application.Database.Migrations
             modelBuilder.Entity("Commerce.Application.Models.Product", b =>
                 {
                     b.Navigation("Images");
+
+                    b.Navigation("Ratings");
                 });
 
             modelBuilder.Entity("Commerce.Application.Models.User", b =>
                 {
                     b.Navigation("PasswordResetTokens");
+
+                    b.Navigation("Ratings");
 
                     b.Navigation("RefreshTokens");
                 });
