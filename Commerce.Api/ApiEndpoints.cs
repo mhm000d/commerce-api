@@ -12,6 +12,14 @@ public static class ApiEndpoints
         public const string Get = $"{Base}/{{id:guid}}";
         public const string GetAll = Base;
     }
+    
+    // ── Ratings Endpoints ─────────────────────────────────────────────────
+    public static class Ratings
+    {
+        public const string PostRating = $"{ApiBase}/products/{{productId:guid}}/ratings";
+        public const string PutRating = $"{ApiBase}/ratings/{{id:guid}}";
+        public const string DeleteRating = $"{ApiBase}/ratings/{{id:guid}}";
+    }
 
     // ── Product-Images Endpoints ─────────────────────────────────────────────────
     public static class ProductImages
