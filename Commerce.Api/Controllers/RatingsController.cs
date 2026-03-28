@@ -60,6 +60,6 @@ public class RatingsController(IRatingService ratingService) : ControllerBase
 
         var response = ratings.Select(r => r.ToResponse());
 
-        return Ok(response);
+        return Ok(response.ToList());
     }
 }
