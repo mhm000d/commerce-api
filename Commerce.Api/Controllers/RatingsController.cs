@@ -50,4 +50,16 @@ public class RatingsController(IRatingService ratingService) : ControllerBase
         
         return NoContent();
     }
+    
+    [HttpGet(ApiEndpoints.Ratings.GetRatings)]
+    public async Task<IActionResult> GetRatings(
+        Guid productId,
+        CancellationToken ct)
+    {
+        var ratings = await ratingService.GetRatingsAsync(productId, ct);
+
+        var response = ratings.Select(r => r.ToResponse());
+
+        return Ok(response);
+    }
 }

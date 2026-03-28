@@ -19,6 +19,7 @@ public static class ApiEndpoints
         public const string PostRating = $"{ApiBase}/products/{{productId:guid}}/ratings";
         public const string PutRating = $"{ApiBase}/ratings/{{id:guid}}";
         public const string DeleteRating = $"{ApiBase}/ratings/{{id:guid}}";
+        public const string GetRatings = $"{ApiBase}/products/{{productId:guid}}/ratings";
     }
 
     // ── Product-Images Endpoints ─────────────────────────────────────────────────
