@@ -1,30 +1,32 @@
 using Commerce.Application.Database;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Respawn;
 
 namespace Commerce.Tests.IntegrationTests.Infrastructure;
 
 public abstract class IntegrationTestBase(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    // AppDbContext your tests use to arrange data and assert state
     protected AppDbContext DbContext { get; private set; } = null!;
 
-    public virtual Task InitializeAsync()
+    public virtual async Task InitializeAsync()
     {
-        try
+        await using var conn = new NpgsqlConnection(fixture.ConnectionString);
+        await conn.OpenAsync();
+
+        var respawner = await Respawner.CreateAsync(conn, new RespawnerOptions
         {
-            // Fresh DbContext for every test — avoids EF Core's change tracker
-            // bleeding state from one test into another.
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseNpgsql(fixture.ConnectionString)
-                .Options;
-        
-            DbContext = new AppDbContext(options);
-            return Task.CompletedTask;
-        }
-        catch (Exception exception)
-        {
-            return Task.FromException(exception);
-        }
+            DbAdapter = DbAdapter.Postgres,
+            SchemasToInclude = ["public"]
+        });
+
+        await respawner.ResetAsync(conn);
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .Options;
+
+        DbContext = new AppDbContext(options);
     }
 
     public virtual async Task DisposeAsync()

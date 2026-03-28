@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
+using Respawn;
 using Testcontainers.PostgreSql;
 
 namespace Commerce.Tests.IntegrationTests.Infrastructure;
@@ -63,5 +65,39 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public new async Task DisposeAsync()
     {
         await _container.DisposeAsync();
+    }
+    
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Called at the start of every test that uses the HTTP client.
+    /// Truncates all rows so tests are fully isolated from each other.
+    /// </summary>
+    public async Task ResetDatabaseAsync()
+    {
+        await using var conn = new NpgsqlConnection(_container.GetConnectionString());
+        await conn.OpenAsync();
+
+        var respawner = await Respawner.CreateAsync(conn, new RespawnerOptions
+        {
+            DbAdapter = DbAdapter.Postgres,
+            SchemasToInclude = ["public"]
+        });
+
+        await respawner.ResetAsync(conn);
+    }
+    
+    /// <summary>
+    /// A direct DbContext backed by the test container.
+    /// Use only in Arrange/Assert — never pass to the code under test.
+    /// Caller is responsible for disposing.
+    /// </summary>
+    public AppDbContext CreateDbContext()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(_container.GetConnectionString())
+            .Options;
+
+        return new AppDbContext(options);
     }
 }
