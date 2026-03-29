@@ -68,4 +68,16 @@ public static class ApiEndpoints
         public const string PutAddress   = $"{Base}/{{id:guid}}";
         public const string DeleteAddress   = $"{Base}/{{id:guid}}";
     }
+    
+    // ── Carts Endpoints ─────────────────────────────────────────────────
+    public static class Cart
+    {
+        private const string Base = $"{ApiBase}/cart";
+
+        public const string GetCart        = Base;
+        public const string PostCartItem   = $"{Base}/items";
+        public const string PutCartItem    = $"{Base}/items/{{id:guid}}";
+        public const string DeleteCartItem = $"{Base}/items/{{id:guid}}";
+        public const string DeleteCart     = Base;
+    }
 }
