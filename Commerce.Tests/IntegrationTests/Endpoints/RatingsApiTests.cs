@@ -9,8 +9,9 @@ using Shouldly;
 
 namespace Commerce.Tests.IntegrationTests.Endpoints;
 
+[Collection("Database")]
 public sealed class RatingsApiTests(ApiFactory factory)
-    : IClassFixture<ApiFactory>, IAsyncLifetime
+    : IAsyncLifetime
 {
     // Fresh client per test via InitializeAsync — prevents DefaultRequestHeaders
     // set in one test from bleeding into the next.
