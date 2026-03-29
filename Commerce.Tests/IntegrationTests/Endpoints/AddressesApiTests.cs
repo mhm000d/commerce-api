@@ -8,8 +8,9 @@ using Shouldly;
 
 namespace Commerce.Tests.IntegrationTests.Endpoints;
 
+[Collection("Database")]
 public sealed class AddressesApiTests(ApiFactory factory)
-    : IClassFixture<ApiFactory>, IAsyncLifetime
+    : IAsyncLifetime
 {
     private HttpClient _client = null!;
 
