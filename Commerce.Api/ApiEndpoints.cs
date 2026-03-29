@@ -57,4 +57,15 @@ public static class ApiEndpoints
         public const string ForgotPassword = $"{Base}/forgot-password";
         public const string ResetPassword = $"{Base}/reset-password";
     }
+    
+    // ── Addresses Endpoints ─────────────────────────────────────────────────
+    public static class Addresses
+    {
+        private const string Base = $"{ApiBase}/addresses";
+
+        public const string GetAddresses = Base;
+        public const string PostAddress  = Base;
+        public const string PutAddress   = $"{Base}/{{id:guid}}";
+        public const string DeleteAddress   = $"{Base}/{{id:guid}}";
+    }
 }
