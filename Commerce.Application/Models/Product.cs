@@ -18,7 +18,8 @@ public class Product
     // ── Navigation Properties ─────────────────────────────────────────────────
     public ICollection<ProductImage> Images { get; private set; } = [];
     public ICollection<Rating> Ratings { get; private set; } = [];
-    
+    public ICollection<CartItem>     CartItems  { get; private set; } = [];
+
     // ── Factory ───────────────────────────────────────────────────────────────
     public static Product Create(
         string name,

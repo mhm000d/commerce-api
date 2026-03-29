@@ -95,5 +95,10 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .WithOne(r => r.Product)
             .HasForeignKey(r => r.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.HasMany(p => p.CartItems)
+            .WithOne(ci => ci.Product)
+            .HasForeignKey(ci => ci.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);   // prevent delete of product in active carts
     }
 }
