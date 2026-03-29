@@ -6,19 +6,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Respawn;
-using Testcontainers.PostgreSql;
 
 namespace Commerce.Tests.IntegrationTests.Infrastructure;
 
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = 
-        new PostgreSqlBuilder("dhi.io/postgres:18-debian13-dev")
-            .WithDatabase("commerce_api_test")
-            .WithUsername("test")
-            .WithPassword("test123")
-            .Build();
-    
+    private readonly DatabaseFixture _fixture = new();
+
+    public string ConnectionString => _fixture.ConnectionString;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -46,25 +42,18 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
             // Replace with real PostgreSQL test container
             services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(_container.GetConnectionString()));
+                options.UseNpgsql(_fixture.ConnectionString));
         });
     }
 
     public async Task InitializeAsync()
     {
-        await _container.StartAsync();
-
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(_container.GetConnectionString())
-            .Options;
-
-        await using var context = new AppDbContext(options);
-        await context.Database.MigrateAsync();
+        await _fixture.InitializeAsync();
     }
 
     public new async Task DisposeAsync()
     {
-        await _container.DisposeAsync();
+        await _fixture.DisposeAsync();
     }
     
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -75,7 +64,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     /// </summary>
     public async Task ResetDatabaseAsync()
     {
-        await using var conn = new NpgsqlConnection(_container.GetConnectionString());
+        await using var conn = new NpgsqlConnection(_fixture.ConnectionString);
         await conn.OpenAsync();
 
         var respawner = await Respawner.CreateAsync(conn, new RespawnerOptions
@@ -95,7 +84,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public AppDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(_container.GetConnectionString())
+            .UseNpgsql(_fixture.ConnectionString)
             .Options;
 
         return new AppDbContext(options);

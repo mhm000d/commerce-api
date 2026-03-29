@@ -3,9 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Respawn;
 
+using Xunit;
+
 namespace Commerce.Tests.IntegrationTests.Infrastructure;
 
-public abstract class IntegrationTestBase(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
+[Collection("Database")]
+public abstract class IntegrationTestBase(DatabaseFixture fixture) : IAsyncLifetime
 {
     protected AppDbContext DbContext { get; private set; } = null!;
 
