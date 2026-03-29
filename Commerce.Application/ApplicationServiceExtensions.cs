@@ -1,3 +1,4 @@
+using Commerce.Application.Services.Carts;
 using Commerce.Application.Services.Ratings;
 using System.Text;
 using Amazon.S3;
@@ -27,6 +28,7 @@ public static class ApplicationServiceExtensions
             services.AddScoped<IProductImageService, ProductImageService>();
             services.AddScoped<IRatingService, RatingService>();
             services.AddScoped<IAddressService, AddressService>();
+            services.AddScoped<ICartService, CartService>();
             services.AddValidatorsFromAssemblyContaining<ProductValidator>();
             // AWS S3
             services.AddDefaultAWSOptions(configuration.GetAWSOptions());

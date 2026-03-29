@@ -89,6 +89,59 @@ namespace Commerce.Application.Database.Migrations
                     b.ToTable("Addresses", (string)null);
                 });
 
+            modelBuilder.Entity("Commerce.Application.Models.Cart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Cart_UserId");
+
+                    b.ToTable("Carts", (string)null);
+                });
+
+            modelBuilder.Entity("Commerce.Application.Models.CartItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CartId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("UnitPriceSnapshot")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CartId")
+                        .HasDatabaseName("IX_CartItem_CartId");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("IX_CartItem_ProductId");
+
+                    b.ToTable("CartItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CartItem_Quantity", "\"Quantity\" BETWEEN 1 AND 999");
+                        });
+                });
+
             modelBuilder.Entity("Commerce.Application.Models.PasswordResetToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -380,6 +433,36 @@ namespace Commerce.Application.Database.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Commerce.Application.Models.Cart", b =>
+                {
+                    b.HasOne("Commerce.Application.Models.User", "User")
+                        .WithOne("Cart")
+                        .HasForeignKey("Commerce.Application.Models.Cart", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Commerce.Application.Models.CartItem", b =>
+                {
+                    b.HasOne("Commerce.Application.Models.Cart", "Cart")
+                        .WithMany("Items")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Commerce.Application.Models.Product", "Product")
+                        .WithMany("CartItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cart");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Commerce.Application.Models.PasswordResetToken", b =>
                 {
                     b.HasOne("Commerce.Application.Models.User", "User")
@@ -462,8 +545,15 @@ namespace Commerce.Application.Database.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Commerce.Application.Models.Cart", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("Commerce.Application.Models.Product", b =>
                 {
+                    b.Navigation("CartItems");
+
                     b.Navigation("Images");
 
                     b.Navigation("Ratings");
@@ -472,6 +562,8 @@ namespace Commerce.Application.Database.Migrations
             modelBuilder.Entity("Commerce.Application.Models.User", b =>
                 {
                     b.Navigation("Addresses");
+
+                    b.Navigation("Cart");
 
                     b.Navigation("PasswordResetTokens");
 
