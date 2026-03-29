@@ -2,6 +2,7 @@ using Commerce.Application.Services.Ratings;
 using System.Text;
 using Amazon.S3;
 using Commerce.Application.Database;
+using Commerce.Application.Services.Addresses;
 using Commerce.Application.Services.Auth;
 using Commerce.Application.Services.ProductImages;
 using Commerce.Application.Services.Products;
@@ -25,6 +26,7 @@ public static class ApplicationServiceExtensions
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IProductImageService, ProductImageService>();
             services.AddScoped<IRatingService, RatingService>();
+            services.AddScoped<IAddressService, AddressService>();
             services.AddValidatorsFromAssemblyContaining<ProductValidator>();
             // AWS S3
             services.AddDefaultAWSOptions(configuration.GetAWSOptions());
