@@ -7,8 +7,9 @@ using Shouldly;
 
 namespace Commerce.Tests.IntegrationTests.Endpoints;
 
+[Collection("Database")]
 public sealed class AuthApiTests(ApiFactory factory)
-    : IClassFixture<ApiFactory>, IAsyncLifetime
+    : IAsyncLifetime
 {
     private HttpClient _client = null!;
 
