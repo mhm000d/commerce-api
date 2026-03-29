@@ -15,6 +15,7 @@ public class User
     public ICollection<PasswordResetToken> PasswordResetTokens { get; private set; } = [];
     public ICollection<Rating> Ratings { get; private set; } = [];
     public ICollection<Address> Addresses { get; private set; } = [];
+    public Cart? Cart { get; private set; } // nullable: created on first cart action
 
     // ── Factory ───────────────────────────────────────────────────────────────
     public static User Create(string name, string email, string rawPassword, string? phone = null)
@@ -34,7 +35,7 @@ public class User
     // ── Behaviour ─────────────────────────────────────────────────────────────
     public bool VerifyPassword(string rawPassword)
         => BCrypt.Net.BCrypt.Verify(rawPassword, PasswordHash);
-    
+
     public void UpdatePassword(string rawPassword)
     {
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(rawPassword);
