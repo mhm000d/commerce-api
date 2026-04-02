@@ -14,6 +14,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Address> Addresses => Set<Address>();
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<Order>  Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
+    public DbSet<EmailNotification> EmailNotifications => Set<EmailNotification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
