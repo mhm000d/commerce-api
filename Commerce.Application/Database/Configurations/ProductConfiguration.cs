@@ -100,5 +100,11 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .WithOne(ci => ci.Product)
             .HasForeignKey(ci => ci.ProductId)
             .OnDelete(DeleteBehavior.Restrict);   // prevent delete of product in active carts
+        
+        builder.HasMany(p => p.OrderItems)
+            .WithOne(oi => oi.Product)
+            .HasForeignKey(oi => oi.ProductId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);   // preserve order history
     }
 }

@@ -16,6 +16,7 @@ public class User
     public ICollection<Rating> Ratings { get; private set; } = [];
     public ICollection<Address> Addresses { get; private set; } = [];
     public Cart? Cart { get; private set; } // nullable: created on first cart action
+    public ICollection<Order> Orders { get; private set; } = [];
 
     // ── Factory ───────────────────────────────────────────────────────────────
     public static User Create(string name, string email, string rawPassword, string? phone = null)
@@ -39,7 +40,6 @@ public class User
     public void UpdatePassword(string rawPassword)
     {
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(rawPassword);
-        // Caller still responsible for revoking RefreshTokens
     }
 
     public void PromoteToAdmin() => Role = UserRole.Admin;

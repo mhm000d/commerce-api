@@ -70,11 +70,11 @@ public class Address
         AddressName = addressName;
     }
 
-    /// <summary>
-    /// Only one address per user should be default — the service layer
-    /// must unset IsDefault on all other addresses before calling this.
-    /// </summary>
+    /// <summary>Only one address per user should be default.</summary>
     public void SetAsDefault() => IsDefault = true;
 
     public void UnsetDefault() => IsDefault = false;
+
+    /// <summary>creates an immutable snapshot for Order.ShippingAddressSnapshot.</summary>
+    public AddressSnapshot ToSnapshot() => AddressSnapshot.From(this);
 }

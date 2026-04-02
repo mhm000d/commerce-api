@@ -18,7 +18,8 @@ public class Product
     // ── Navigation Properties ─────────────────────────────────────────────────
     public ICollection<ProductImage> Images { get; private set; } = [];
     public ICollection<Rating> Ratings { get; private set; } = [];
-    public ICollection<CartItem>     CartItems  { get; private set; } = [];
+    public ICollection<CartItem> CartItems { get; private set; } = [];
+    public ICollection<OrderItem> OrderItems { get; private set; } = [];
 
     // ── Factory ───────────────────────────────────────────────────────────────
     public static Product Create(
@@ -30,18 +31,18 @@ public class Product
     {
         return new Product
         {
-            Id            = Guid.NewGuid(),
-            Name          = name,
-            Description   = description!,
-            Price         = price,
+            Id = Guid.NewGuid(),
+            Name = name,
+            Description = description!,
+            Price = price,
             StockQuantity = stockQuantity,
-            Category      = category,
-            RatingCount   = 0,
-            IsDeleted     = false,
-            CreatedAt     = DateTimeOffset.UtcNow,
+            Category = category,
+            RatingCount = 0,
+            IsDeleted = false,
+            CreatedAt = DateTimeOffset.UtcNow,
         };
     }
-    
+
     // ── Model Behaviour ─────────────────────────────────────────────────
     public void UpdateDetails(string name, string description, decimal price, int stockQuantity, Category category)
     {
@@ -51,26 +52,49 @@ public class Product
         StockQuantity = stockQuantity;
         Category = category;
     }
+
     public void SetSpecifications(IEnumerable<ProductSpecification> specs)
     {
-        Specifications.Clear();  // Remove old ones
+        Specifications.Clear(); // Remove old ones
         foreach (var spec in specs)
             Specifications.Add(new ProductSpecification(spec.Key, spec.Value));
     }
+
     public void Delete()
     {
         IsDeleted = true;
         DeletedAt = DateTimeOffset.UtcNow;
     }
-    
+
     /// <summary>
     /// Called by RatingService after every rating create / update / delete.
     /// Must be called inside the same transaction as the rating change.
     /// </summary>
     public void UpdateRatingStats(int count, decimal? average)
     {
-        RatingCount    = count;
-        AverageRating  = average;
+        RatingCount = count;
+        AverageRating = average;
+    }
+    
+    public void DecreaseStock(int quantity)
+    {
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be positive.");
+        if (StockQuantity < quantity)
+            throw new InvalidOperationException(
+                $"Cannot decrease stock for '{Name}': only {StockQuantity} available.");
+
+        StockQuantity -= quantity;
+    }
+
+    /// <summary>
+    /// Restores stock on order cancellation or payment failure.
+    /// </summary>
+    public void RestoreStock(int quantity)
+    {
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be positive.");
+        StockQuantity += quantity;
     }
 }
 
