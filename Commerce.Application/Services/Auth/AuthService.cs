@@ -156,8 +156,12 @@ public class AuthService(
 
         if (user is null)
         {
+            var safeEmailForLog = (email ?? string.Empty)
+                .Replace("\r", string.Empty)
+                .Replace("\n", string.Empty);
+
             logger.LogInformation(
-                "Password reset requested for unknown email {Email}", email);
+                "Password reset requested for unknown email {Email}", safeEmailForLog);
             return;
         }
 
