@@ -1,6 +1,8 @@
 using Commerce.Api.Mappings;
+using Commerce.Application.Models;
 using Commerce.Application.Services.Products;
 using Commerce.Contracts.Products;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commerce.Api.Controllers;
@@ -23,6 +25,7 @@ public class ProductsController(IProductService productService) : ControllerBase
     }
 
     [HttpPost(ApiEndpoints.Admin.PostProduct)]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<ActionResult<ProductResponse>> Post([FromBody] ProductRequest request)
     {
         var product = await productService.CreateAsync(request.ToDomain());
@@ -35,6 +38,7 @@ public class ProductsController(IProductService productService) : ControllerBase
     }
 
     [HttpPut(ApiEndpoints.Admin.PutProduct)]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<ActionResult<ProductResponse>> Put(
         [FromRoute] Guid id,
         [FromBody] ProductRequest request)
@@ -44,6 +48,7 @@ public class ProductsController(IProductService productService) : ControllerBase
     }
 
     [HttpDelete(ApiEndpoints.Admin.DeleteProduct)]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Delete(Guid id)
     {
         await productService.DeleteAsync(id);
