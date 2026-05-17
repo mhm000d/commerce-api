@@ -1,6 +1,7 @@
 using Commerce.Application.Database;
 using Commerce.Application.Exceptions;
 using Commerce.Application.Models;
+using Commerce.Application.Services.Email;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -14,7 +15,7 @@ public class AuthService(
     IValidator<RefreshToken> refreshTokenValidator,
     IValidator<PasswordResetToken> passwordResetTokenValidator,
     ITokenService tokenService,
-    /*IEmailNotificationService emailService,*/
+    IEmailNotificationService emailService,
     ILogger<AuthService> logger) : IAuthService
 {
     public async Task<AuthResult> RegisterAsync(string name, string email, string rawPassword, string? phone)
@@ -148,10 +149,10 @@ public class AuthService(
         );
     }
 
-    public async Task ForgotPasswordAsync(string email)
+    public async Task ForgotPasswordAsync(string email, CancellationToken ct = default)
     {
         var user = await dbContext.Users
-            .FirstOrDefaultAsync(u => u.Email == email);
+            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken: ct);
 
         if (user is null)
         {
@@ -163,12 +164,12 @@ public class AuthService(
         var (rawToken, tokenHash) = tokenService.GenerateRefreshToken();
         var resetToken = PasswordResetToken.Create(user.Id, tokenHash);
 
-        await passwordResetTokenValidator.ValidateAndThrowAsync(resetToken);
+        await passwordResetTokenValidator.ValidateAndThrowAsync(resetToken, cancellationToken: ct);
 
         dbContext.PasswordResetTokens.Add(resetToken);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(ct);
 
-        // await emailService.QueuePasswordResetEmailAsync(user.Email, rawToken);
+        await emailService.QueuePasswordResetAsync(user.Email, rawToken, ct);
     }
 
     public async Task ResetPasswordAsync(string rawToken, string newRawPassword)

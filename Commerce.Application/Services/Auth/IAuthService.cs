@@ -32,7 +32,7 @@ public interface IAuthService
     /// <summary>
     /// Initiates a password reset process for the given email.
     /// </summary>
-    Task ForgotPasswordAsync(string email);
+    Task ForgotPasswordAsync(string email, CancellationToken ct = default);
     
     /// <summary>
     /// Resets the user's password using a valid reset token.

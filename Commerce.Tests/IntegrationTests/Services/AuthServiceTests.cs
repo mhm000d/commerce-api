@@ -1,6 +1,7 @@
 using Commerce.Application.Exceptions;
 using Commerce.Application.Models;
 using Commerce.Application.Services.Auth;
+using Commerce.Application.Services.Email;
 using Commerce.Application.Validators;
 using Commerce.Tests.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,7 @@ public class AuthServiceTests(DatabaseFixture fixture) : IntegrationTestBase(fix
         var userValidator = new UserValidator();
         var refreshTokenValidator = new RefreshTokenValidator();
         var passwordResetTokenValidator = new PasswordResetTokenValidator();
+        var emailNotificationService = Substitute.For<IEmailNotificationService>();
 
         // Use a real TokenService here because token generation/hashing is part of
         // the behavior you want to test end-to-end.
@@ -38,6 +40,7 @@ public class AuthServiceTests(DatabaseFixture fixture) : IntegrationTestBase(fix
             refreshTokenValidator: refreshTokenValidator,
             passwordResetTokenValidator: passwordResetTokenValidator,
             tokenService: tokenService,
+            emailService: emailNotificationService,
             logger: logger
         );
     }

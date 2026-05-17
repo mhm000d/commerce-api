@@ -3,6 +3,7 @@ using Commerce.Api.Mappings;
 using Commerce.Application.Services.Auth;
 using Commerce.Contracts.Auth;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commerce.Api.Controllers;
@@ -10,6 +11,7 @@ namespace Commerce.Api.Controllers;
 [ApiController]
 public class AuthController(IAuthService authService) : ControllerBase
 {
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.Register)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterRequest request)
@@ -24,6 +26,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         return StatusCode(201, result.ToResponse());
     }
 
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.Login)]
     public async Task<IActionResult> Login(
         [FromBody] LoginRequest request)
@@ -34,6 +37,7 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     // NOTE for a client: replace the stored refresh token immediately after this call.
     // Replaying the old token triggers reuse detection and kills the entire session.
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.Refresh)]
     public async Task<IActionResult> Refresh(
         [FromBody] RefreshRequest request)
@@ -59,14 +63,17 @@ public class AuthController(IAuthService authService) : ControllerBase
         return NoContent();
     }
     
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.ForgotPassword)]
     public async Task<IActionResult> ForgotPassword(
-        [FromBody] ForgotPasswordRequest request)
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken ct)
     {
-        await authService.ForgotPasswordAsync(request.Email);
+        await authService.ForgotPasswordAsync(request.Email, ct);
         return NoContent();
     }
     
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.ResetPassword)]
     public async Task<IActionResult> ResetPassword(
         [FromBody] ResetPasswordRequest request)
