@@ -9,7 +9,7 @@
     <ItemGroup>
       <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.23" />
       <PackageReference Include="AWSSDK.S3" Version="4.0.18.7" />
-      <PackageReference Include="AWSSDK.SimpleEmailV2" Version="4.0.12.7" />
+      <PackageReference Include="AWSSDK.SimpleEmailV2" Version="4.0.12.16" />
       <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
       <PackageReference Include="FluentValidation" Version="12.1.1" />
       <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
