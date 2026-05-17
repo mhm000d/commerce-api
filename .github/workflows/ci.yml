@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: 10.0.102
+  BUILD_CONFIGURATION: Release
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore Commerce.sln
+
+      - name: Build
+        run: dotnet build Commerce.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore -m:1
+
+      - name: Run unit tests
+        run: >
+          dotnet test Commerce.Tests/Commerce.Tests.csproj
+          --configuration ${{ env.BUILD_CONFIGURATION }}
+          --no-build
+          --filter FullyQualifiedName~UnitTests
+          --logger "trx;LogFileName=unit-tests.trx"
+          --results-directory TestResults/unit
+
+      - name: Run integration tests
+        run: >
+          dotnet test Commerce.Tests/Commerce.Tests.csproj
+          --configuration ${{ env.BUILD_CONFIGURATION }}
+          --no-build
+          --filter FullyQualifiedName~IntegrationTests
+          --logger "trx;LogFileName=integration-tests.trx"
+          --results-directory TestResults/integration
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults/**/*.trx
+          if-no-files-found: ignore
+
+  migrations:
+    name: Validate EF Core migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=commerceDb;Username=commerce_user;Password=commerce_password
+      Jwt__Key: CommerceDevelopmentSigningKey-ChangeMe-ForCiOnly-1234567890
+      Jwt__Issuer: CommerceApi
+      Jwt__Audience: CommerceClient
+      Frontend__BaseUrl: http://localhost:3000
+      Stripe__SecretKey: sk_test_ci
+      Stripe__WebhookSecret: whsec_ci
+      Email__FromAddress: noreply@commerce.local
+      Email__FromName: Commerce Store
+      Email__FrontendBaseUrl: http://localhost:3000
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore Commerce.sln
+
+      - name: Build
+        run: dotnet build Commerce.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore -m:1
+
+      - name: Install EF Core CLI
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.0.0
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Generate idempotent migration script
+        run: >
+          mkdir -p artifacts &&
+          dotnet ef migrations script
+          --idempotent
+          --project Commerce.Application/Commerce.Application.csproj
+          --startup-project Commerce.Api/Commerce.Api.csproj
+          --configuration ${{ env.BUILD_CONFIGURATION }}
+          --no-build
+          --output artifacts/migrations.sql
+
+      - name: Upload migration script
+        uses: actions/upload-artifact@v7
+        with:
+          name: ef-migration-script
+          path: artifacts/migrations.sql
+
+  docker:
+    name: Docker validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Validate Docker Compose configuration
+        run: docker compose --profile api config --quiet
+
+      - name: Build API image
+        run: docker compose --profile api build api
