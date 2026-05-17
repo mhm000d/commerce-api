@@ -49,7 +49,7 @@ public class WebhookEventConfiguration : IEntityTypeConfiguration<WebhookEvent>
         builder.ToTable(t =>
             t.HasCheckConstraint(
                 "CK_WebhookEvent_Status",
-                "\"Status\" IN ('PENDING','PROCESSED','FAILED')"));
+                "\"Status\" IN ('Pending','Processed','Failed')"));
                 
         // ── Indexes ──────────────────────────────────────────────────
         // Unique on Stripe EventId — core idempotency guard
