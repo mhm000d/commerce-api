@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.23" />
+      <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.40" />
       <PackageReference Include="AWSSDK.S3" Version="4.0.23.3" />
       <PackageReference Include="AWSSDK.SimpleEmailV2" Version="4.0.12.7" />
       <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
