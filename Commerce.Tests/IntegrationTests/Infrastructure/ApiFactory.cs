@@ -1,10 +1,13 @@
 using Commerce.Application.Database;
+using Commerce.Application.Services.Admin;
+using Commerce.Application.Services.Payments;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using NSubstitute;
 using Respawn;
 
 namespace Commerce.Tests.IntegrationTests.Infrastructure;
@@ -14,6 +17,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     private readonly DatabaseFixture _fixture = new();
 
     public string ConnectionString => _fixture.ConnectionString;
+
+    public IStripeService StripeMock { get; } = Substitute.For<IStripeService>();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -27,7 +32,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 { "Jwt:Issuer", "CommerceApi" },
                 { "Jwt:Audience", "CommerceClient" },
                 { "Jwt:AccessTokenExpirationMinutes", "15" },
-                { "Jwt:RefreshTokenExpirationDays", "7" }
+                { "Jwt:RefreshTokenExpirationDays", "7" },
+                { "Frontend:BaseUrl", "http://localhost:3000" },
+                { "Stripe:WebhookSecret", "whsec_test_secret" },
+                { "RateLimiting:Enabled", "false" },
+                { "RateLimiting:AnonymousPermitLimit", "10000" },
+                { "RateLimiting:AuthenticatedPermitLimit", "10000" },
+                { "RateLimiting:AuthEndpointPermitLimit", "10000" },
             });
         });
 
@@ -43,6 +54,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             // Replace with real PostgreSQL test container
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(_fixture.ConnectionString));
+
+            services.AddScoped<IStripeService>(_ => StripeMock);
+            services.AddScoped<IAdminService, AdminService>();
         });
     }
 

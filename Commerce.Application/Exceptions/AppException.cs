@@ -26,3 +26,6 @@ public class UnauthorizedException(string message, string code)
     
 public class ServerException(string message, string code = "INTERNAL_ERROR")
     : AppException(message, code, 500);
+    
+public class EmailPermanentException(string message, Exception? inner = null)
+    : Exception(message, inner);

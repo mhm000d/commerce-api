@@ -42,6 +42,9 @@ public static class ApiEndpoints
         public const string PostImage  = $"{Base}/{{productId:guid}}/images";
         public const string DeleteImage = $"{Base}/{{productId:guid}}/images/{{imageId:guid}}";
         public const string SetPrimary  = $"{Base}/{{productId:guid}}/images/{{imageId:guid}}/set-primary";
+        
+        public const string GetOrders         = $"{ApiBase}/admin/orders";
+        public const string UpdateOrderStatus = $"{ApiBase}/admin/orders/{{id:guid}}/status";
     }
     
     // ── Auth Endpoints ─────────────────────────────────────────────────
@@ -79,5 +82,24 @@ public static class ApiEndpoints
         public const string PutCartItem    = $"{Base}/items/{{id:guid}}";
         public const string DeleteCartItem = $"{Base}/items/{{id:guid}}";
         public const string DeleteCart     = Base;
+    }
+    
+    // ── Orders Endpoints ──────────────────────────────────────────────────────
+    public static class Orders
+    {
+        private const string Base = $"{ApiBase}/orders";
+
+        public const string Checkout    = $"{ApiBase}/checkout";  // intentionally not under /orders
+        public const string GetCheckoutSessionStatus = $"{ApiBase}/checkout/session-status";
+
+        public const string GetOrders   = Base;
+        public const string GetOrder    = $"{Base}/{{id:guid}}";
+        public const string CancelOrder = $"{Base}/{{id:guid}}/cancel";
+    }
+    
+    // ── Webhooks Endpoints ────────────────────────────────────────────────────
+    public static class Webhooks
+    {
+        public const string Stripe = $"{ApiBase}/webhooks/stripe";
     }
 }
