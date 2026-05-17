@@ -6,8 +6,11 @@ namespace Commerce.Tests.IntegrationTests.Infrastructure;
 
 public class DatabaseFixture : IAsyncLifetime
 {
+    private static readonly string PostgresImage =
+        Environment.GetEnvironmentVariable("TEST_POSTGRES_IMAGE") ?? "postgres:18";
+
     private readonly PostgreSqlContainer _container =
-        new PostgreSqlBuilder("dhi.io/postgres:18-debian13-dev")
+        new PostgreSqlBuilder(PostgresImage)
         .WithDatabase("commerce_test")
         .WithUsername("test")
         .WithPassword("test123")
