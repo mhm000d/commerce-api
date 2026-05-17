@@ -156,6 +156,8 @@ The project is structured to show production-oriented backend engineering: clear
 
 The solution follows a layered backend architecture:
 
+![Commerce API system architecture](Docs/assets/system-architecture.png)
+
 ```text
 Client
   |
@@ -177,7 +179,7 @@ Project responsibilities:
 - `Commerce.Application`: domain behavior, application services, EF Core database model, migrations, validation, background jobs, auth/token logic, payment adapter, email services, and storage adapter.
 - `Commerce.Contracts`: request and response DTOs shared by the API boundary.
 - `Commerce.Tests`: unit and integration tests for validators, services, endpoints, jobs, email templates, auth, carts, ratings, addresses, orders, and admin workflows.
-- `Docs`: planning/specification notes used during project design.
+- `Docs`: planning/specification notes used during project design, plus README assets.
 
 ### Architecture Decisions
 
@@ -409,6 +411,8 @@ cp .env.example .env
 
 Stripe and AWS values can stay empty unless you want to test card checkout or product image uploads.
 
+Docker Compose uses the public `postgres:18` image by default so the project works from a fresh clone or fork. To run locally against Docker Hardened Images, authenticate with `docker login dhi.io` and set `POSTGRES_IMAGE=dhi.io/postgres:18-debian13-dev` in your `.env`.
+
 Start the full backend:
 
 ```bash
@@ -547,6 +551,12 @@ dotnet test Commerce.Tests/Commerce.Tests.csproj --filter FullyQualifiedName~Uni
 
 Integration tests require Docker because they start a PostgreSQL container through Testcontainers and reset database state with Respawn.
 
+Integration tests use the public `postgres:18` image by default. To run them locally against Docker Hardened Images, authenticate with `docker login dhi.io` and run:
+
+```bash
+TEST_POSTGRES_IMAGE=dhi.io/postgres:18-debian13-dev dotnet test Commerce.Tests/Commerce.Tests.csproj --filter FullyQualifiedName~IntegrationTests
+```
+
 ## CI / Automation
 
 GitHub Actions workflows are defined under `.github/workflows`:
@@ -555,6 +565,7 @@ GitHub Actions workflows are defined under `.github/workflows`:
 - `security.yml`: runs on pull requests, pushes, and a weekly schedule. It performs dependency review, checks NuGet packages for known vulnerabilities, and runs CodeQL analysis for C#.
 
 Dependabot is configured in `.github/dependabot.yml` for weekly updates to NuGet packages, GitHub Actions, Dockerfile images, and Docker Compose images.
+Patch and minor dependency updates are ignored to keep routine automation focused on larger version changes.
 
 ## Project Structure
 
@@ -575,8 +586,8 @@ Commerce/
 |   +-- Validators/            # FluentValidation rules
 +-- Commerce.Contracts/        # Request/response DTOs exposed at the API boundary
 +-- Commerce.Tests/            # Unit and integration tests
-+-- Docs/                      # Planning and domain notes
-+-- .github/                  # CI, security workflows, Dependabot
++-- Docs/                      # Planning notes, domain notes, and README assets
++-- .github/                   # CI, security workflows, Dependabot
 +-- compose.yaml               # Local PostgreSQL, Mailpit, and API orchestration
 +-- Commerce.sln
 ```
@@ -594,11 +605,14 @@ Commerce/
 ## Future Improvements
 
 - Add catalog pagination, search, filtering, and sorting to the public product listing.
+- Build a frontend client for customer shopping, checkout, account management, and admin operations.
+- Evaluate an external identity provider such as Auth0 for hosted authentication, social login, and enterprise identity features.
 - Add structured request logging, correlation IDs, metrics, and tracing.
 - Add a distributed rate-limit store if the API is scaled across multiple instances.
 - Add LocalStack or MinIO for local S3-compatible image-upload testing.
+- Use AWS CloudFront in front of S3 for CDN-backed product image delivery.
 - Expand payment coverage for additional Stripe webhook events such as refunds and failed payment flows.
-- Add deployment configuration for a cloud environment, including secret management and production-ready observability.
+- Add deployment configuration for a cloud environment, including AWS Secrets Manager and production-ready observability.
 
 ## Documentation Notes
 
