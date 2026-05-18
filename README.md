@@ -428,7 +428,12 @@ Default URLs:
 - Mailpit Web UI: `http://127.0.0.1:8025`
 - PostgreSQL: `localhost:5432`
 
-The API container runs EF Core migrations and seeds sample products on startup. Product image upload requires valid AWS credentials and an S3 bucket. Card checkout requires Stripe test keys.
+The API container runs EF Core migrations, resets the development demo catalog and checkout data to five products, and creates a development-only admin user on startup. Product image upload requires valid AWS credentials and an S3 bucket. Card checkout requires Stripe test keys.
+
+Development admin credentials:
+
+- Email: `admin@commerce.local`
+- Password: `Admin123!`
 
 Stop the full backend:
 
@@ -506,7 +511,10 @@ Default local URLs:
 - Health check: `http://localhost:5082/health`
 - Hangfire dashboard: `http://localhost:5082/hangfire`
 
-The application automatically applies EF Core migrations and seeds sample products on startup outside the `Testing` environment.
+The application automatically applies EF Core migrations on startup outside the `Testing` environment. In `Development`, it resets the demo catalog and checkout data to five products and creates the local admin user:
+
+- Email: `admin@commerce.local`
+- Password: `Admin123!`
 
 ## Configuration Reference
 
