@@ -113,14 +113,14 @@ public class OrderValidatorTests
     {
         var address = BuildAddress();
         var snapshot = AddressSnapshot.From(address);
-        var order = Order.Create(Guid.NewGuid(), "Order #001000001", snapshot);
+        var order = Order.Create(Guid.NewGuid(), "001000001", snapshot);
         order.SetTotalAmount(total);
         return order;
     }
 
     private static Order BuildOrderWithNullAddress()
     {
-        var order = Order.Create(Guid.NewGuid(), "Order #001000002",
+        var order = Order.Create(Guid.NewGuid(), "001000002",
             default(AddressSnapshot)!);
         order.SetTotalAmount(10m);
 

@@ -119,6 +119,8 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         body.ShouldNotBeNull();
         body.StripeClientSecret.ShouldBeNull();
         body.OrderNumber.ShouldNotBeNullOrEmpty();
+        body.OrderNumber.ShouldNotContain("Order #");
+        body.OrderNumber.All(char.IsDigit).ShouldBeTrue();
         body.TotalAmount.ShouldBe(50m);
     }
 

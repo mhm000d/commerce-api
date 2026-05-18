@@ -1,12 +1,16 @@
+using System.Text.Json;
 using Commerce.Application.Exceptions;
 using Commerce.Application.Models;
+using Commerce.Application.Services.Email;
 using Commerce.Application.Services.Orders;
 using Commerce.Application.Services.Payments;
+using Commerce.Application.Settings;
 using Commerce.Application.Validators;
 using Commerce.Tests.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Shouldly;
 
@@ -41,6 +45,14 @@ public class OrderServiceTests(DatabaseFixture fixture) : IntegrationTestBase(fi
         _orderService = new OrderService(
             dbContext:      DbContext,
             stripeService:  _stripeMock,
+            emailService:   new EmailNotificationService(
+                DbContext,
+                Options.Create(new EmailSettings
+                {
+                    FromAddress = "noreply@commerce.local",
+                    FromName = "Commerce",
+                    FrontendBaseUrl = "http://localhost:3000"
+                })),
             orderValidator: new OrderValidator(),
             configuration:  config,
             logger:         Substitute.For<ILogger<OrderService>>());
@@ -144,6 +156,35 @@ public class OrderServiceTests(DatabaseFixture fixture) : IntegrationTestBase(fi
     }
 
     [Fact]
+    public async Task Checkout_COD_ShouldQueueOrderConfirmationEmail()
+    {
+        var (user, address, product) = await ArrangeCheckoutAsync(price: 50m);
+
+        var (order, _) = await _orderService.CheckoutAsync(
+            user.Id, address.Id, CheckoutPaymentMethod.CashOnDelivery);
+
+        var notification = await DbContext.EmailNotifications
+            .SingleAsync(n => n.OrderId == order.Id);
+
+        notification.RecipientEmail.ShouldBe(user.Email);
+        notification.Template.ShouldBe(EmailTemplate.OrderConfirmation);
+        notification.Status.ShouldBe(EmailStatus.Pending);
+        notification.TemplateData["CustomerName"].ShouldBe(user.Name);
+        notification.TemplateData["OrderNumber"].ShouldBe(order.OrderNumber);
+        notification.TemplateData["TotalAmount"].ShouldBe("50.00");
+        notification.TemplateData["PaymentMethod"].ShouldBe("Cash on delivery");
+        notification.TemplateData["PaymentStatus"].ShouldBe("Awaiting payment");
+
+        var items = JsonSerializer.Deserialize<List<OrderLineItemData>>(
+            notification.TemplateData["Items"])!;
+
+        items.Count.ShouldBe(1);
+        items[0].ProductName.ShouldBe(product.Name);
+        items[0].UnitPrice.ShouldBe(50m);
+        items[0].Quantity.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task Checkout_COD_ShouldDecrementStockAndClearCart()
     {
         var (user, address, product) = await ArrangeCheckoutAsync(stock: 10, price: 50m);
@@ -193,6 +234,20 @@ public class OrderServiceTests(DatabaseFixture fixture) : IntegrationTestBase(fi
         var payment = await DbContext.Payments.SingleAsync(p => p.OrderId == order.Id);
         payment.PaymentProviderId.ShouldBe("cs_test_session123");
         payment.PaymentMethod.ShouldBe("card");
+    }
+
+    [Fact]
+    public async Task Checkout_Card_ShouldNotQueueOrderConfirmationBeforeWebhookCompletes()
+    {
+        var (user, address, _) = await ArrangeCheckoutAsync();
+
+        var (order, _) = await _orderService.CheckoutAsync(
+            user.Id, address.Id, CheckoutPaymentMethod.Card);
+
+        var queuedCount = await DbContext.EmailNotifications
+            .CountAsync(n => n.OrderId == order.Id);
+
+        queuedCount.ShouldBe(0);
     }
 
     [Fact]

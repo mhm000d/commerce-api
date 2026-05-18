@@ -2,6 +2,7 @@ using System.Data;
 using Commerce.Application.Database;
 using Commerce.Application.Exceptions;
 using Commerce.Application.Models;
+using Commerce.Application.Services.Email;
 using Commerce.Application.Services.Payments;
 using Commerce.Contracts.Orders;
 using FluentValidation;
@@ -15,6 +16,7 @@ namespace Commerce.Application.Services.Orders;
 public class OrderService(
     AppDbContext dbContext,
     IStripeService stripeService,
+    IEmailNotificationService emailService,
     IValidator<Order> orderValidator,
     IConfiguration configuration,
     ILogger<OrderService> logger) : IOrderService
@@ -168,6 +170,11 @@ public class OrderService(
 
         await dbContext.SaveChangesAsync(ct);
 
+        if (paymentMethod == CheckoutPaymentMethod.CashOnDelivery)
+        {
+            await QueueOrderConfirmationAsync(order, user, lineItemSnapshots, ct);
+        }
+
         await LoadOrderNavigationsAsync(order, ct);
         return (order, stripeClientSecret);
     }
@@ -236,6 +243,30 @@ public class OrderService(
 
     // ── Private Helpers ───────────────────────────────────────────────────────
 
+    private async Task QueueOrderConfirmationAsync(
+        Order order,
+        User user,
+        IEnumerable<CheckoutLineItem> lineItems,
+        CancellationToken ct)
+    {
+        var emailLineItems = lineItems.Select(i => new OrderLineItemData(
+            ProductName: i.ProductName,
+            ImageUrl: i.PrimaryImageUrl,
+            UnitPrice: i.UnitPrice,
+            Quantity: i.Quantity));
+
+        await emailService.QueueOrderConfirmationAsync(
+            user.Email,
+            user.Name,
+            order.OrderNumber,
+            order.Id.ToString(),
+            order.TotalAmount,
+            emailLineItems,
+            ct,
+            paymentMethod: "Cash on delivery",
+            paymentStatus: "Awaiting payment");
+    }
+
     /// <summary>
     /// Shared cancel logic: restores product stock and initiates a Stripe refund
     /// if the payment was already completed.
@@ -279,7 +310,7 @@ public class OrderService(
     }
 
     /// <summary>
-    /// Generates a human-readable, sequential order number using a PostgreSQL sequence.
+    /// Generates a sequential public order number using a PostgreSQL sequence.
     /// </summary>
     private async Task<string> GenerateOrderNumberAsync(CancellationToken ct)
     {
@@ -290,6 +321,6 @@ public class OrderService(
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = "SELECT nextval('order_number_seq')";
         var seq = (long)(await cmd.ExecuteScalarAsync(ct))!;
-        return $"Order #{seq:D9}"; // → "Order #001000001"
+        return $"{seq:D9}"; // "001000001"
     }
 }

@@ -249,7 +249,7 @@ Constraints:
 - `ConfirmationEmailSentAt (nullable)`
 - `CreatedAt`
 
-`OrderNumber` for the user e.g. `Order #000421017`
+`OrderNumber` for the user e.g. `000421017`
 
 
 > Orders do **not** reference the Address table directly.

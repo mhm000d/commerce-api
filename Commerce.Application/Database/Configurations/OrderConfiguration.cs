@@ -20,7 +20,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
             .IsRequired()
             .HasColumnType("uuid");
 
-        // Human-readable order number, e.g. "Order #000421017"
+        // Public order number, e.g. "000421017"
         // Generated in the application layer (e.g. sequence or padded counter)
         builder.Property(o => o.OrderNumber)
             .IsRequired()
