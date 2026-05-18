@@ -68,14 +68,6 @@ public class WebhookController(
     {
         switch (e.Type)
         {
-            // case "payment_intent.succeeded":
-            //     await HandlePaymentSucceededAsync(e, ct);
-            //     break;
-            //
-            // case "payment_intent.payment_failed":
-            //     await HandlePaymentFailedAsync(e, ct);
-            //     break;
-            
             case "checkout.session.completed":
                 await HandleCheckoutCompletedAsync(e, ct);
                 break;
@@ -140,7 +132,9 @@ public class WebhookController(
             payment.Order.Id.ToString(),
             payment.Order.TotalAmount,
             lineItems,
-            ct);
+            ct,
+            paymentMethod: "Card",
+            paymentStatus: "Paid");
         
         logger.LogInformation(
             "Checkout completed. OrderId={OrderId} PaymentIntentId={IntentId}",
@@ -153,12 +147,7 @@ public class WebhookController(
         // PaymentTimeoutJob will also catch this, but the webhook is faster.
         if (!Guid.TryParse(e.ClientReferenceId, out var orderId))
             return;
-
-        // var payment = await dbContext.Payments
-        //     .Include(p => p.Order)
-        //     .ThenInclude(o => o.Items)
-        //     .ThenInclude(i => i.Product)
-        //     .FirstOrDefaultAsync(p => p.OrderId == orderId, ct);
+        
         var payment = await LoadPaymentWithOrderAsync(orderId, ct);
 
         if (payment.Order.Status == OrderStatus.Cancelled)
@@ -188,61 +177,4 @@ public class WebhookController(
                ?? throw new InvalidOperationException(
                    $"No payment found for OrderId '{orderId}'.");
     }
-    
-    // private async Task HandlePaymentSucceededAsync(ParsedStripeEvent e, CancellationToken ct)
-    // {
-    //     var payment = await LoadPaymentWithOrderAsync(e.PaymentIntentId!, ct);
-    //
-    //     payment.MarkCompleted();
-    //     payment.Order.MarkAsPaid();
-    //
-    //     // Queue a confirmation email — EmailSenderJob will pick it up within 1 minute.
-    //     var user = await dbContext.Users.FindAsync([payment.Order.UserId], ct)
-    //                ?? throw new InvalidOperationException("User not found for order.");
-    //
-    //     var notification = EmailNotification.Create(
-    //         recipientEmail: user.Email,
-    //         template:       EmailTemplate.OrderConfirmation,
-    //         templateData: new Dictionary<string, string>
-    //         {
-    //             ["OrderNumber"] = payment.Order.OrderNumber,
-    //             ["TotalAmount"] = payment.Order.TotalAmount.ToString("F2"),
-    //         },
-    //         orderId: payment.OrderId);
-    //
-    //     dbContext.EmailNotifications.Add(notification);
-    //
-    //     logger.LogInformation(
-    //         "Payment succeeded. OrderId={OrderId} PaymentIntentId={IntentId}",
-    //         payment.OrderId, e.PaymentIntentId);
-    // }
-    
-    // private async Task HandlePaymentFailedAsync(ParsedStripeEvent e, CancellationToken ct)
-    // {
-    //     var payment = await LoadPaymentWithOrderAsync(e.PaymentIntentId!, ct);
-    //
-    //     payment.MarkFailed();
-    //
-    //     // Restore stock and cancel the order. isAdmin: true lets us cancel from
-    //     // any non-DELIVERED state, which is correct for a system-initiated action.
-    //     foreach (var item in payment.Order.Items)
-    //         item.Product.RestoreStock(item.Quantity);
-    //
-    //     payment.Order.Cancel(isAdmin: true);
-    //
-    //     logger.LogWarning(
-    //         "Payment failed. OrderId={OrderId} PaymentIntentId={IntentId}",
-    //         payment.OrderId, e.PaymentIntentId);
-    // }
-    
-    // private async Task<Payment> LoadPaymentWithOrderAsync(string paymentIntentId, CancellationToken ct)
-    // {
-    //     return await dbContext.Payments
-    //                .Include(p => p.Order)
-    //                .ThenInclude(o => o.Items)
-    //                .ThenInclude(i => i.Product)
-    //                .FirstOrDefaultAsync(p => p.PaymentProviderId == paymentIntentId, ct)
-    //            ?? throw new InvalidOperationException(
-    //                $"No payment found for PaymentIntentId '{paymentIntentId}'.");
-    // }
 }
