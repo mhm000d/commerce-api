@@ -41,6 +41,7 @@ public class EmailSenderJobTests(DatabaseFixture fixture) : IntegrationTestBase(
 
     private static EmailNotification MakePendingOrderNotification(
         string to = "customer@example.com",
+        Guid? orderId = null,
         int maxAttempts = 3) =>
         EmailNotification.Create(
             recipientEmail: to,
@@ -48,11 +49,12 @@ public class EmailSenderJobTests(DatabaseFixture fixture) : IntegrationTestBase(
             templateData: new Dictionary<string, string>
             {
                 ["CustomerName"] = "John",
-                ["OrderNumber"]  = "Order #000000001",
-                ["OrderId"]      = Guid.NewGuid().ToString(),
+                ["OrderNumber"]  = "000000001",
+                ["OrderId"]      = (orderId ?? Guid.NewGuid()).ToString(),
                 ["TotalAmount"]  = "49.99",
                 ["Items"]        = "[]"
             },
+            orderId: orderId,
             maxAttempts: maxAttempts);
 
     private static EmailNotification MakePendingPasswordResetNotification(string to = "user@example.com") =>
@@ -83,6 +85,22 @@ public class EmailSenderJobTests(DatabaseFixture fixture) : IntegrationTestBase(
         await _emailServiceMock.Received(1)
             .SendAsync("customer@example.com", Arg.Any<string>(), Arg.Any<string>(),
                 Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenOrderConfirmationSent_ShouldMarkOrderConfirmationEmailSent()
+    {
+        var order = await SeedMinimalOrderAsync();
+        var notification = MakePendingOrderNotification(orderId: order.Id);
+        await SaveAsync(notification);
+
+        await _job.ExecuteAsync();
+
+        var updatedOrder = await DbContext.Orders.AsNoTracking()
+            .SingleAsync(o => o.Id == order.Id);
+
+        updatedOrder.ConfirmationEmailSent.ShouldBeTrue();
+        updatedOrder.ConfirmationEmailSentAt.ShouldNotBeNull();
     }
 
     [Fact]
@@ -232,5 +250,31 @@ public class EmailSenderJobTests(DatabaseFixture fixture) : IntegrationTestBase(
 
         failedResult!.Status.ShouldBe(EmailStatus.Failed);
         succeededResult!.Status.ShouldBe(EmailStatus.Sent);
+    }
+
+    private async Task<Order> SeedMinimalOrderAsync()
+    {
+        var user = User.Create("Test User", $"{Guid.NewGuid()}@example.com", "Password1");
+        await SaveAsync(user);
+
+        var address = Address.Create(
+            user.Id,
+            "John Doe",
+            "01012345678",
+            "Egypt",
+            "Cairo",
+            "Nasr City",
+            "Street 9",
+            "12",
+            "3",
+            "7",
+            "Home",
+            true);
+
+        var order = Order.Create(user.Id, "000000001", AddressSnapshot.From(address));
+        order.SetTotalAmount(49.99m);
+        await SaveAsync(order);
+
+        return order;
     }
 }

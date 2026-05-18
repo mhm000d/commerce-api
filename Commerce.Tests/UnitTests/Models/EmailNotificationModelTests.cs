@@ -10,7 +10,7 @@ public class EmailNotificationModelTests
         EmailNotification.Create(
             recipientEmail: "test@example.com",
             template: EmailTemplate.OrderConfirmation,
-            templateData: new Dictionary<string, string> { ["OrderNumber"] = "Order #1" },
+            templateData: new Dictionary<string, string> { ["OrderNumber"] = "000000001" },
             maxAttempts: maxAttempts);
 
     // ── Create ────────────────────────────────────────────────────────────────

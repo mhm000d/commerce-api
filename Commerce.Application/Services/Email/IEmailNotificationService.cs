@@ -9,7 +9,9 @@ public interface IEmailNotificationService
         string orderId,
         decimal totalAmount,
         IEnumerable<OrderLineItemData> items,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        string paymentMethod = "Card",
+        string paymentStatus = "Paid");
 
     Task QueuePasswordResetAsync(
         string recipientEmail,

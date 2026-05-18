@@ -14,7 +14,8 @@ public class EmailNotificationService(
 
     public async Task QueueOrderConfirmationAsync(string recipientEmail, string customerName,
         string orderNumber, string orderId, decimal totalAmount,
-        IEnumerable<OrderLineItemData> items, CancellationToken ct = default)
+        IEnumerable<OrderLineItemData> items, CancellationToken ct = default,
+        string paymentMethod = "Card", string paymentStatus = "Paid")
     {
         var notification = EmailNotification.Create(
             recipientEmail: recipientEmail,
@@ -25,6 +26,8 @@ public class EmailNotificationService(
                 ["OrderNumber"]  = orderNumber,
                 ["OrderId"]      = orderId,
                 ["TotalAmount"]  = totalAmount.ToString("F2"),
+                ["PaymentMethod"] = paymentMethod,
+                ["PaymentStatus"] = paymentStatus,
                 ["Items"]        = JsonSerializer.Serialize(items)
             },
             orderId: Guid.TryParse(orderId, out var id) ? id : null);

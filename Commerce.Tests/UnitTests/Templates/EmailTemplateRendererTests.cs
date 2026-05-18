@@ -19,10 +19,12 @@ public class EmailTemplateRendererTests
         }));
 
     private static Dictionary<string, string> OrderConfirmationData(
-        string orderNumber  = "Order #000000001",
+        string orderNumber  = "000000001",
         string customerName = "John Doe",
         string totalAmount  = "99.99",
         string? orderId     = null,
+        string paymentMethod = "Card",
+        string paymentStatus = "Paid",
         List<OrderLineItemData>? items = null) =>
         new()
         {
@@ -30,6 +32,8 @@ public class EmailTemplateRendererTests
             ["OrderNumber"]  = orderNumber,
             ["OrderId"]      = orderId ?? Guid.NewGuid().ToString(),
             ["TotalAmount"]  = totalAmount,
+            ["PaymentMethod"] = paymentMethod,
+            ["PaymentStatus"] = paymentStatus,
             ["Items"]        = JsonSerializer.Serialize(items ?? [])
         };
 
@@ -42,10 +46,10 @@ public class EmailTemplateRendererTests
 
         var (subject, html) = renderer.Render(
             EmailTemplate.OrderConfirmation,
-            OrderConfirmationData(orderNumber: "Order #000000042"));
+            OrderConfirmationData(orderNumber: "000000042"));
 
-        subject.ShouldContain("Order #000000042");
-        html.ShouldContain("Order #000000042");
+        subject.ShouldContain("000000042");
+        html.ShouldContain("000000042");
     }
 
     [Fact]
@@ -134,6 +138,46 @@ public class EmailTemplateRendererTests
 
         // Placeholder emoji is rendered when no image URL is stored
         html.ShouldContain("🛍️");
+        html.ShouldContain("<table role=\"presentation\" width=\"64\" height=\"64\"");
+        html.ShouldNotContain("display:flex");
+    }
+
+    [Fact]
+    public void RenderOrderConfirmation_WithItemImage_ShouldUseEmailSafeImageMarkup()
+    {
+        var renderer = CreateRenderer();
+        var items = new List<OrderLineItemData>
+        {
+            new("Nike Air Max", "https://img.example.com/shoe.jpg?size=64&fit=crop", 89.99m, 2)
+        };
+
+        var (_, html) = renderer.Render(
+            EmailTemplate.OrderConfirmation,
+            OrderConfirmationData(items: items));
+
+        html.ShouldContain("width=\"64\" height=\"64\"");
+        html.ShouldContain("https://img.example.com/shoe.jpg?size=64&amp;fit=crop");
+        html.ShouldNotContain("object-fit");
+        html.ShouldNotContain("display:flex");
+        html.ShouldNotContain("align-items");
+        html.ShouldNotContain("justify-content");
+    }
+
+    [Fact]
+    public void RenderOrderConfirmation_ShouldRenderPaymentMethodAndStatus()
+    {
+        var renderer = CreateRenderer();
+
+        var (_, html) = renderer.Render(
+            EmailTemplate.OrderConfirmation,
+            OrderConfirmationData(
+                paymentMethod: "Cash on delivery",
+                paymentStatus: "Awaiting payment"));
+
+        html.ShouldContain("Payment method");
+        html.ShouldContain("Cash on delivery");
+        html.ShouldContain("Payment status");
+        html.ShouldContain("Awaiting payment");
     }
 
     [Fact]
@@ -143,7 +187,7 @@ public class EmailTemplateRendererTests
         var dataWithoutItems = new Dictionary<string, string>
         {
             ["CustomerName"] = "Test",
-            ["OrderNumber"]  = "Order #1",
+            ["OrderNumber"]  = "000000001",
             ["OrderId"]      = Guid.NewGuid().ToString(),
             ["TotalAmount"]  = "0.00"
             // No "Items" key

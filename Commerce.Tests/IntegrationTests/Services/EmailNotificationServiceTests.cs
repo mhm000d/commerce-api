@@ -39,7 +39,7 @@ public class EmailNotificationServiceTests(DatabaseFixture fixture) : Integratio
         await _service.QueueOrderConfirmationAsync(
             recipientEmail: "customer@example.com",
             customerName:   "John Doe",
-            orderNumber:    "Order #000000001",
+            orderNumber:    "000000001",
             orderId:        order.Id.ToString(),
             totalAmount:    99.99m,
             items:          []);
@@ -60,18 +60,22 @@ public class EmailNotificationServiceTests(DatabaseFixture fixture) : Integratio
         await _service.QueueOrderConfirmationAsync(
             recipientEmail: "customer@example.com",
             customerName:   "Jane Doe",
-            orderNumber:    "Order #000000007",
+            orderNumber:    "000000007",
             orderId:        null!,
             totalAmount:    249.99m,
-            items:          []);
+            items:          [],
+            paymentMethod:  "Cash on delivery",
+            paymentStatus:  "Awaiting payment");
 
         var notification = await DbContext.EmailNotifications
             .SingleAsync(n => n.RecipientEmail == "customer@example.com");
         // DbContext.Update(notification);
         
         notification.TemplateData["CustomerName"].ShouldBe("Jane Doe");
-        notification.TemplateData["OrderNumber"].ShouldBe("Order #000000007");
+        notification.TemplateData["OrderNumber"].ShouldBe("000000007");
         notification.TemplateData["TotalAmount"].ShouldBe("249.99");
+        notification.TemplateData["PaymentMethod"].ShouldBe("Cash on delivery");
+        notification.TemplateData["PaymentStatus"].ShouldBe("Awaiting payment");
     }
 
     [Fact]
@@ -83,7 +87,7 @@ public class EmailNotificationServiceTests(DatabaseFixture fixture) : Integratio
         };
 
         await _service.QueueOrderConfirmationAsync(
-            "customer@example.com", "John", "Order #2",
+            "customer@example.com", "John", "000000002",
             null!, 599.98m, items);
 
         var notification = await DbContext.EmailNotifications
@@ -164,7 +168,7 @@ public class EmailNotificationServiceTests(DatabaseFixture fixture) : Integratio
             "Egypt", "Cairo", "Nasr City", "Street 9", "12", "3", "7", "Home", true);
 
         var snapshot = AddressSnapshot.From(address);
-        var order = Order.Create(user.Id, "Order #000000001", snapshot);
+        var order = Order.Create(user.Id, "000000001", snapshot);
         order.SetTotalAmount(99.99m);
         await SaveAsync(order);
 

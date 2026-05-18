@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using Commerce.Application.Models;
@@ -34,6 +35,14 @@ public class EmailTemplateRenderer(IOptions<EmailSettings> settings)
         var totalAmount = data.GetValueOrDefault("TotalAmount", "0.00");
         var customerName = data.GetValueOrDefault("CustomerName", "Valued Customer");
         var orderId = data.GetValueOrDefault("OrderId", "");
+        var paymentMethod = data.GetValueOrDefault("PaymentMethod", "Card");
+        var paymentStatus = data.GetValueOrDefault("PaymentStatus", "Paid");
+        var paymentStatusBackground = paymentStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase)
+            ? "#dcfce7"
+            : "#fef3c7";
+        var paymentStatusColor = paymentStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase)
+            ? "#16a34a"
+            : "#92400e";
         var orderUrl = $"{_settings.FrontendBaseUrl}/orders/{orderId}";
         var subject = $"Order Confirmed – {orderNumber}";
 
@@ -81,7 +90,7 @@ public class EmailTemplateRenderer(IOptions<EmailSettings> settings)
                               <tr>
                                 <td style="background-color:#16a34a;padding:16px 40px;text-align:center;">
                                   <p style="margin:0;font-size:15px;font-weight:600;color:#ffffff;">
-                                    ✅ &nbsp; Payment received — we're processing your order
+                                    ✅ &nbsp; We are processing your order
                                   </p>
                                 </td>
                               </tr>
@@ -91,7 +100,7 @@ public class EmailTemplateRenderer(IOptions<EmailSettings> settings)
                                 <td style="background-color:#ffffff;padding:36px 40px;">
 
                                   <p style="margin:0 0 28px;font-size:16px;color:#374151;">
-                                    Hi <strong>{customerName}</strong>, thank you for your purchase!
+                                    Hi <strong>{HtmlEncode(customerName)}</strong>, thank you for your purchase!
                                   </p>
 
                                   <!-- ── Items table ─────────────────────────────────── -->
@@ -118,6 +127,15 @@ public class EmailTemplateRenderer(IOptions<EmailSettings> settings)
                                             <td colspan="2"><hr style="border:none;border-top:1px solid #e5e7eb;margin:2px 0;"/></td>
                                           </tr>
                                           <tr>
+                                            <td style="padding:7px 0;font-size:14px;color:#374151;">Payment method</td>
+                                            <td align="right" style="padding:7px 0;font-size:14px;font-weight:600;color:#111827;">
+                                              {HtmlEncode(paymentMethod)}
+                                            </td>
+                                          </tr>
+                                          <tr>
+                                            <td colspan="2"><hr style="border:none;border-top:1px solid #e5e7eb;margin:2px 0;"/></td>
+                                          </tr>
+                                          <tr>
                                             <td style="padding:7px 0;font-size:15px;color:#374151;font-weight:600;">Order total</td>
                                             <td align="right" style="padding:7px 0;font-size:18px;font-weight:700;color:#1a1a2e;">
                                               ${totalAmount}
@@ -127,11 +145,11 @@ public class EmailTemplateRenderer(IOptions<EmailSettings> settings)
                                             <td colspan="2"><hr style="border:none;border-top:1px solid #e5e7eb;margin:2px 0;"/></td>
                                           </tr>
                                           <tr>
-                                            <td style="padding:7px 0;font-size:14px;color:#374151;">Status</td>
+                                            <td style="padding:7px 0;font-size:14px;color:#374151;">Payment status</td>
                                             <td align="right" style="padding:7px 0;">
-                                              <span style="display:inline-block;background-color:#dcfce7;color:#16a34a;
+                                              <span style="display:inline-block;background-color:{paymentStatusBackground};color:{paymentStatusColor};
                                                            font-size:12px;font-weight:700;padding:4px 12px;border-radius:9999px;">
-                                                Paid
+                                                {HtmlEncode(paymentStatus)}
                                               </span>
                                             </td>
                                           </tr>
@@ -155,7 +173,7 @@ public class EmailTemplateRenderer(IOptions<EmailSettings> settings)
                                   </table>
 
                                   <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.6;">
-                                    You'll receive another email when your order ships. Questions?
+                                    Questions?
                                     Visit our <a href="{_settings.FrontendBaseUrl}/support"
                                                  style="color:#1a1a2e;">support center</a>.
                                   </p>
@@ -199,21 +217,26 @@ public class EmailTemplateRenderer(IOptions<EmailSettings> settings)
 
         foreach (var item in items)
         {
+            var productName = HtmlEncode(item.ProductName);
+
             // Placeholder shown when no image URL is stored
-            var imageCell = item.ImageUrl is not null
+            var imageCell = !string.IsNullOrWhiteSpace(item.ImageUrl)
                 ? $"""
-                   <img src="{item.ImageUrl}" alt="{item.ProductName}"
+                   <img src="{HtmlEncode(item.ImageUrl)}" alt="{productName}"
                         width="64" height="64"
-                        style="width:64px;height:64px;object-fit:cover;
-                               border-radius:6px;display:block;border:0;"/>
+                        style="width:64px;height:64px;border-radius:6px;
+                               display:block;border:0;outline:none;text-decoration:none;"/>
                    """
                 : """
-                  <div style="width:64px;height:64px;background-color:#f3f4f6;
-                              border-radius:6px;display:flex;align-items:center;
-                              justify-content:center;font-size:24px;text-align:center;
-                              line-height:64px;">
-                    🛍️
-                  </div>
+                  <table role="presentation" width="64" height="64" cellpadding="0" cellspacing="0"
+                         style="width:64px;height:64px;background-color:#f3f4f6;border-radius:6px;border-collapse:collapse;">
+                    <tr>
+                      <td width="64" height="64" align="center" valign="middle"
+                          style="width:64px;height:64px;font-size:24px;line-height:64px;text-align:center;">
+                        🛍️
+                      </td>
+                    </tr>
+                  </table>
                   """;
 
             rows.Append($"""
@@ -227,7 +250,7 @@ public class EmailTemplateRenderer(IOptions<EmailSettings> settings)
                            <td style="padding:14px 12px;vertical-align:top;">
                              <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#111827;
                                        line-height:1.4;">
-                               {System.Net.WebUtility.HtmlEncode(item.ProductName)}
+                               {productName}
                              </p>
                              <p style="margin:0;font-size:13px;color:#6b7280;">
                                ${item.UnitPrice:F2} &times; {item.Quantity}
@@ -274,6 +297,9 @@ public class EmailTemplateRenderer(IOptions<EmailSettings> settings)
                 </table>
                 """;
     }
+
+    private static string HtmlEncode(string? value) =>
+        WebUtility.HtmlEncode(value ?? string.Empty);
 
     // ── Password Reset ────────────────────────────────────────────────────────
 

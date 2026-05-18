@@ -22,8 +22,6 @@ public class EmailSenderJob(
     // Called by Hangfire — registered in DI as transient.
     public async Task ExecuteAsync()
     {
-        var now = DateTimeOffset.UtcNow;
-
         // Fetch batch of eligible notifications.
         // PermanentlyFailed and Sent are intentionally excluded.
         var pending = await dbContext.EmailNotifications
@@ -61,6 +59,7 @@ public class EmailSenderJob(
                 htmlBody: htmlBody);
 
             notification.RecordAttempt(success: true);
+            await TryMarkOrderConfirmationSentAsync(notification);
 
             logger.LogInformation(
                 "Email sent. NotificationId={Id} Template={Template} To={To}",
@@ -91,6 +90,26 @@ public class EmailSenderJob(
                     "Email permanently failed after {Max} attempts. NotificationId={Id} To={To}",
                     notification.MaxAttempts, notification.Id, notification.RecipientEmail);
             }
+        }
+    }
+
+    private async Task TryMarkOrderConfirmationSentAsync(EmailNotification notification)
+    {
+        if (notification.Template != EmailTemplate.OrderConfirmation || !notification.OrderId.HasValue)
+            return;
+
+        try
+        {
+            var order = await dbContext.Orders.FindAsync(notification.OrderId.Value);
+            order?.MarkConfirmationEmailSent();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Failed to mark order confirmation email as sent. OrderId={OrderId} NotificationId={NotificationId}",
+                notification.OrderId,
+                notification.Id);
         }
     }
 }
