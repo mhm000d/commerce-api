@@ -51,6 +51,8 @@ jobs:
           --results-directory TestResults/unit
 
       - name: Run integration tests
+        env:
+          TEST_POSTGRES_IMAGE: docker.io/library/postgres:18
         run: >
           dotnet test Commerce.Tests/Commerce.Tests.csproj
           --configuration ${{ env.BUILD_CONFIGURATION }}
