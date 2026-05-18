@@ -55,6 +55,68 @@ The architecture prioritizes:
 - Recommendation engine
 - Native mobile apps
 
+## Post-MVP Roadmap Notes
+
+These items are intentionally outside the MVP boundary but capture the main
+areas of work needed to move from a working backend to a production commerce
+system.
+
+### Product Readiness
+
+- Build a frontend client for customer shopping, cart management, checkout, account management, order history, and admin workflows.
+- Add dedicated inventory adjustment workflows instead of relying only on full product updates.
+- Add stock history or audit records for admin inventory changes.
+- Add richer catalog management: nested categories, product attributes, bulk product updates, and product import/export.
+- Add wishlist or save-for-later flows for authenticated customers.
+- Add discount codes, promotions, and order-level adjustments.
+- Add product analytics for catalog performance, conversion, and inventory movement.
+
+### Payments And Order Lifecycle
+
+- Expand Stripe webhook coverage for refunds, failed payments, expired checkout sessions, chargebacks, and asynchronous payment failures.
+- Add payment reconciliation tooling so stored payment state can be compared against Stripe state.
+- Add retry and recovery workflows for orders stuck in intermediate payment states.
+- Add clearer refund lifecycle handling for customer and admin cancellations.
+- Add shipment tracking fields and fulfillment-provider integration once delivery is real.
+
+### Security And Account Hardening
+
+- Add email verification before sensitive account or checkout actions.
+- Add login-attempt protections such as account lockout, adaptive throttling, or risk-based checks.
+- Evaluate MFA for admin accounts.
+- Evaluate an external identity provider such as Auth0 for hosted authentication, social login, and enterprise identity features.
+- Add audit logging for admin actions and security-sensitive account events.
+
+### Operations And Observability
+
+- Add structured request logging, correlation IDs, metrics, tracing, and production dashboards.
+- Add production-ready alerting for checkout failures, webhook failures, email delivery failures, and background job backlogs.
+- Add a distributed rate-limit store if the API is scaled across multiple instances.
+- Add deployment configuration for a cloud environment, including AWS Secrets Manager or another managed secret store.
+- Define a production migration strategy rather than relying only on local startup behavior.
+- Add backup, restore, and data-retention documentation for PostgreSQL.
+
+### Infrastructure And Media
+
+- Add LocalStack or MinIO for local S3-compatible image-upload testing.
+- Use AWS CloudFront in front of S3 for CDN-backed product image delivery.
+- Add image processing for thumbnails, size variants, and safer metadata handling.
+- Add malware/content validation for uploaded media if uploads become user-facing.
+
+### Search And Catalog Scale
+
+- Add PostgreSQL full-text or trigram indexes for better catalog search performance.
+- Consider a dedicated search engine if catalog size or search relevance requirements grow.
+- Add faceted filtering for price ranges, ratings, category groups, and product attributes.
+- Add deterministic catalog sorting and tie-breakers for all user-facing sort options.
+
+### Testing
+
+- Add direct service tests for catalog query filtering, search, pagination, and sorting.
+- Add more webhook integration tests for duplicate, out-of-order, failed, and refund-related events.
+- Add storage integration tests against LocalStack or MinIO.
+- Add end-to-end smoke tests for the full register-to-checkout-to-order-confirmation path.
+
 ## Method
 
 ### Operational Rules & State Management

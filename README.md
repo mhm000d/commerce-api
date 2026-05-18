@@ -316,7 +316,7 @@ All endpoints are prefixed with `/api`.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/products` | List products |
+| `GET` | `/api/products?page=&pageSize=&category=&search=&sortBy=` | List products with pagination, search, filtering, and sorting |
 | `GET` | `/api/products/{id}` | Get product details |
 | `POST` | `/api/admin/products` | Create product, admin only |
 | `PUT` | `/api/admin/products/{id}` | Update product, admin only |
@@ -604,7 +604,6 @@ Commerce/
 
 ## Future Improvements
 
-- Add catalog pagination, search, filtering, and sorting to the public product listing.
 - Build a frontend client for customer shopping, checkout, account management, and admin operations.
 - Evaluate an external identity provider such as Auth0 for hosted authentication, social login, and enterprise identity features.
 - Add structured request logging, correlation IDs, metrics, and tracing.
