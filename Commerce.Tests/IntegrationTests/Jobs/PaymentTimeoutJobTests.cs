@@ -44,7 +44,7 @@ public class PaymentTimeoutJobTests(DatabaseFixture fixture) : IntegrationTestBa
             Address.Create(user.Id, "John", "01012345678", "Egypt",
                 "Cairo", "Nasr City", "Street 9", "12", "3", "7", "Home", true));
 
-        var order = Order.Create(user.Id, $"Order #{Guid.NewGuid():N}", snapshot);
+        var order = Order.Create(user.Id, $"{Random.Shared.Next(1000000):D9}", snapshot);
         var item  = OrderItem.Create(order.Id, product.Id, 1, product.Price);
         order.AddItem(item);
         order.SetTotalAmount(product.Price);

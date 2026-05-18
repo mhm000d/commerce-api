@@ -73,7 +73,7 @@ public class CleanupJobTests(DatabaseFixture fixture) : IntegrationTestBase(fixt
         var notification = EmailNotification.Create(
             recipientEmail: "test@example.com",
             template:       EmailTemplate.OrderConfirmation,
-            templateData:   new Dictionary<string, string> { ["OrderNumber"] = "Order #1" });
+            templateData:   new Dictionary<string, string> { ["OrderNumber"] = "000000001" });
 
         if (status == EmailStatus.PermanentlyFailed)
         {
