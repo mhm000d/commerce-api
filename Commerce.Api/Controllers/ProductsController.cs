@@ -11,24 +11,30 @@ namespace Commerce.Api.Controllers;
 public class ProductsController(IProductService productService) : ControllerBase
 {
     [HttpGet(ApiEndpoints.Products.Get)]
-    public async Task<IActionResult> Get([FromRoute] Guid id)
+    public async Task<IActionResult> Get([FromRoute] Guid id, CancellationToken ct)
     {
-        var product = await productService.GetAsync(id);
+        var product = await productService.GetAsync(id, ct);
         return Ok(product.ToResponse());
     }
 
     [HttpGet(ApiEndpoints.Products.GetAll)]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(
+        [FromQuery] ProductCatalogRequest request,
+        CancellationToken ct = default)
     {
-        var products = await productService.GetAllAsync();
-        return Ok(products.ToResponse());
+        if (!request.TryToCatalogQuery(out var query, out var error))
+            return BadRequest(error);
+
+        var (products, total) = await productService.GetAllAsync(query, ct);
+
+        return Ok(products.ToPagedResponse(query.Page, query.PageSize, total));
     }
 
     [HttpPost(ApiEndpoints.Admin.PostProduct)]
     [Authorize(Roles = nameof(UserRole.Admin))]
-    public async Task<ActionResult<ProductResponse>> Post([FromBody] ProductRequest request)
+    public async Task<ActionResult<ProductResponse>> Post([FromBody] ProductRequest request, CancellationToken ct)
     {
-        var product = await productService.CreateAsync(request.ToDomain());
+        var product = await productService.CreateAsync(request.ToDomain(), ct);
 
         return CreatedAtAction(
             nameof(Get),
@@ -41,17 +47,18 @@ public class ProductsController(IProductService productService) : ControllerBase
     [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<ActionResult<ProductResponse>> Put(
         [FromRoute] Guid id,
-        [FromBody] ProductRequest request)
+        [FromBody] ProductRequest request,
+        CancellationToken ct)
     {
-        var product = await productService.UpdateAsync(id, request.ToDomain());
+        var product = await productService.UpdateAsync(id, request.ToDomain(), ct);
         return Ok(product.ToResponse());
     }
 
     [HttpDelete(ApiEndpoints.Admin.DeleteProduct)]
     [Authorize(Roles = nameof(UserRole.Admin))]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        await productService.DeleteAsync(id);
+        await productService.DeleteAsync(id, ct);
         return NoContent();
     }
 }
