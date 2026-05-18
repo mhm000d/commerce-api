@@ -16,7 +16,7 @@ public class ProductImagesController(
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<ProductImageResponse>> PostImage(
         Guid productId,
-        /*[FromForm(Name = "image")] */IFormFile image)
+        IFormFile image)
     {
         var productImage = await productImageService.UploadImageAsync(
             productId,
