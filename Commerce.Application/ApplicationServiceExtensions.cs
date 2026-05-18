@@ -76,6 +76,9 @@ public static class ApplicationServiceExtensions
                 .UsePostgreSqlStorage(options =>
                     options.UseNpgsqlConnection(
                         configuration.GetConnectionString("DefaultConnection"))));
+
+            if (!environment.IsEnvironment("Testing"))
+                services.AddHangfireServer();
             
             // Disable buffering so WebhookController can read the raw body:
             services.Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);

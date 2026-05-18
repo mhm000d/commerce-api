@@ -44,7 +44,7 @@ public class AdminServiceTests(DatabaseFixture fixture) : IntegrationTestBase(fi
         await SaveAsync(product);
 
         var snapshot = new AddressSnapshotBuilder().Build();
-        var order    = Order.Create(user.Id, $"Order #{Random.Shared.Next(1000000):D9}", snapshot);
+        var order    = Order.Create(user.Id, $"{Random.Shared.Next(1000000):D9}", snapshot);
         var item     = OrderItem.Create(order.Id, product.Id, quantity: 2, unitPrice: price);
         order.AddItem(item);
         order.SetTotalAmount(price * 2);
@@ -69,7 +69,7 @@ public class AdminServiceTests(DatabaseFixture fixture) : IntegrationTestBase(fi
     //     await SaveAsync(product);
     //
     //     var snapshot = new AddressSnapshotBuilder().Build();
-    //     var order    = Order.Create(user.Id, $"Order #{Random.Shared.Next(1000000):D9}", snapshot);
+    //     var order    = Order.Create(user.Id, $"{Random.Shared.Next(1000000):D9}", snapshot);
     //     var item     = OrderItem.Create(order.Id, product.Id, quantity: 2, unitPrice: price);
     //     order.AddItem(item);
     //     order.SetTotalAmount(price * 2);

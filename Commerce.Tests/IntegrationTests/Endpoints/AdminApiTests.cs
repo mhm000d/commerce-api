@@ -79,7 +79,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
                 "Egypt", "Cairo", "Nasr City", "Street 9",
                 "12", "3", "7", "Home", true));
 
-        var order = Order.Create(user.Id, $"Order #{Random.Shared.Next(1000000):D9}", snapshot);
+        var order = Order.Create(user.Id, $"{Random.Shared.Next(1000000):D9}", snapshot);
         var item  = OrderItem.Create(order.Id, product.Id, 1, 50m);
         order.AddItem(item);
         order.SetTotalAmount(50m);

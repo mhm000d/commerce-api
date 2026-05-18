@@ -45,6 +45,9 @@ public static class HangfireStartupExtensions
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         await dbContext.Database.MigrateAsync();
-        await DbSeeder.SeedAsync(dbContext);
+        await DbSeeder.SeedAsync(
+            dbContext,
+            seedDevelopmentAdmin: app.Environment.IsDevelopment(),
+            resetDemoCatalog: app.Environment.IsDevelopment());
     }
 }
