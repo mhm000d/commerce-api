@@ -24,6 +24,7 @@ public static class ApiServiceExtensions
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
+            options.SupportNonNullableReferenceTypes();
             options.CustomSchemaIds(type => type.FullName);
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
