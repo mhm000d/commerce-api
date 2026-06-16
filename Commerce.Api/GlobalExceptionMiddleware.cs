@@ -1,4 +1,5 @@
 using Commerce.Application.Exceptions;
+using Commerce.Contracts.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace Commerce.Api;
@@ -55,9 +56,10 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
         ctx.Response.ContentType = "application/json";
 
         // details is omitted from JSON entirely when null — keeps response clean
-        object body = details is null
-            ? new { error = message, code }
-            : new { error = message, code, details };
+        // object body = details is null
+        //     ? new { error = message, code }
+        //     : new { error = message, code, details };
+        var body = new ErrorResponse(code, message, details);
 
         return ctx.Response.WriteAsJsonAsync(body);
     }
