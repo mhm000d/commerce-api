@@ -1,6 +1,7 @@
 using Commerce.Api.Mappings;
 using Commerce.Application.Models;
 using Commerce.Application.Services.Products;
+using Commerce.Contracts.Common;
 using Commerce.Contracts.Products;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,14 +12,18 @@ namespace Commerce.Api.Controllers;
 public class ProductsController(IProductService productService) : ControllerBase
 {
     [HttpGet(ApiEndpoints.Products.Get)]
-    public async Task<IActionResult> Get([FromRoute] Guid id, CancellationToken ct)
+    [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ProductResponse>> Get([FromRoute] Guid id, CancellationToken ct)
     {
         var product = await productService.GetAsync(id, ct);
         return Ok(product.ToResponse());
     }
 
     [HttpGet(ApiEndpoints.Products.GetAll)]
-    public async Task<IActionResult> GetAll(
+    [ProducesResponseType(typeof(PagedResponse<ProductsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResponse<ProductsResponse>>> GetAll(
         [FromQuery] ProductCatalogRequest request,
         CancellationToken ct = default)
     {
@@ -32,6 +37,11 @@ public class ProductsController(IProductService productService) : ControllerBase
 
     [HttpPost(ApiEndpoints.Admin.PostProduct)]
     [Authorize(Roles = nameof(UserRole.Admin))]
+    [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProductResponse>> Post([FromBody] ProductRequest request, CancellationToken ct)
     {
         var product = await productService.CreateAsync(request.ToDomain(), ct);
@@ -45,6 +55,11 @@ public class ProductsController(IProductService productService) : ControllerBase
 
     [HttpPut(ApiEndpoints.Admin.PutProduct)]
     [Authorize(Roles = nameof(UserRole.Admin))]
+    [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProductResponse>> Put(
         [FromRoute] Guid id,
         [FromBody] ProductRequest request,
@@ -56,6 +71,10 @@ public class ProductsController(IProductService productService) : ControllerBase
 
     [HttpDelete(ApiEndpoints.Admin.DeleteProduct)]
     [Authorize(Roles = nameof(UserRole.Admin))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         await productService.DeleteAsync(id, ct);

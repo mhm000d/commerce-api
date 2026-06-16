@@ -2,6 +2,7 @@ using Commerce.Application.Database;
 using Commerce.Application.Models;
 using Commerce.Application.Services.Email;
 using Commerce.Application.Services.Payments;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,8 @@ public class WebhookController(
     // Stripe requires the raw request body for signature verification —
     // do not let ASP.NET Core's model binding touch it first.
     [HttpPost(ApiEndpoints.Webhooks.Stripe)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> StripeWebhook(CancellationToken ct)
     {
         var payload = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync(ct);

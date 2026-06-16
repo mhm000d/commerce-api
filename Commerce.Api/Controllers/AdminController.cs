@@ -2,16 +2,21 @@ using Commerce.Api.Mappings;
 using Commerce.Application.Models;
 using Commerce.Application.Services.Admin;
 using Commerce.Contracts.Orders;
+using Commerce.Contracts.Common;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commerce.Api.Controllers;
 
 [ApiController]
 [Authorize(Roles = nameof(UserRole.Admin))]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class AdminController(IAdminService adminService) : ControllerBase
 {
     [HttpGet(ApiEndpoints.Admin.GetOrders)]
+    [ProducesResponseType(typeof(PagedResponse<OrderResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetOrders(
         [FromQuery] int page     = 1,
         [FromQuery] int pageSize = 20,
@@ -23,6 +28,9 @@ public class AdminController(IAdminService adminService) : ControllerBase
     }
     
     [HttpPut(ApiEndpoints.Admin.UpdateOrderStatus)]
+    [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateStatus(
         Guid id,
         [FromBody] UpdateOrderStatusRequest request,

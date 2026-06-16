@@ -2,7 +2,9 @@ using System.Security.Claims;
 using Commerce.Api.Mappings;
 using Commerce.Application.Services.Auth;
 using Commerce.Contracts.Auth;
+using Commerce.Contracts.Common;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +15,10 @@ public class AuthController(IAuthService authService) : ControllerBase
 {
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.Register)]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterRequest request)
     {
@@ -28,6 +34,10 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.Login)]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Login(
         [FromBody] LoginRequest request)
     {
@@ -39,6 +49,10 @@ public class AuthController(IAuthService authService) : ControllerBase
     // Replaying the old token triggers reuse detection and kills the entire session.
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.Refresh)]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Refresh(
         [FromBody] RefreshRequest request)
     {
@@ -47,6 +61,8 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
     
     [HttpPost(ApiEndpoints.Auth.Logout)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Logout(
         [FromBody] LogoutRequest request)
     {
@@ -56,6 +72,8 @@ public class AuthController(IAuthService authService) : ControllerBase
     
     [Authorize]
     [HttpPost(ApiEndpoints.Auth.LogoutAll)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> LogoutAll()
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -65,6 +83,9 @@ public class AuthController(IAuthService authService) : ControllerBase
     
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.ForgotPassword)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> ForgotPassword(
         [FromBody] ForgotPasswordRequest request,
         CancellationToken ct)
@@ -75,6 +96,9 @@ public class AuthController(IAuthService authService) : ControllerBase
     
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost(ApiEndpoints.Auth.ResetPassword)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> ResetPassword(
         [FromBody] ResetPasswordRequest request)
     {

@@ -2,7 +2,9 @@ using Commerce.Api.Mappings;
 using Commerce.Application.Models;
 using Commerce.Application.Services.ProductImages;
 using Commerce.Contracts.ProductImages;
+using Commerce.Contracts.Common;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commerce.Api.Controllers;
@@ -14,6 +16,10 @@ public class ProductImagesController(
     [HttpPost(ApiEndpoints.Admin.PostImage)]
     [Authorize(Roles = nameof(UserRole.Admin))]
     [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ProductImageResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProductImageResponse>> PostImage(
         Guid productId,
         IFormFile image)
@@ -33,6 +39,8 @@ public class ProductImagesController(
     }
 
     [HttpGet(ApiEndpoints.ProductImages.GetImage)]
+    [ProducesResponseType(typeof(ProductImageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProductImageResponse>> GetImage(Guid productId, Guid imageId)
     {
         var productImage = await productImageService.GetAsync(productId, imageId);
@@ -41,6 +49,10 @@ public class ProductImagesController(
 
     [HttpDelete(ApiEndpoints.Admin.DeleteImage)]
     [Authorize(Roles = nameof(UserRole.Admin))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteImage(Guid productId, Guid imageId)
     {
         await productImageService.DeleteAsync(productId, imageId);
@@ -49,6 +61,10 @@ public class ProductImagesController(
 
     [HttpPut(ApiEndpoints.Admin.SetPrimary)]
     [Authorize(Roles = nameof(UserRole.Admin))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> SetPrimaryImage(Guid productId, Guid imageId)
     {
         await productImageService.SetPrimaryAsync(productId, imageId);

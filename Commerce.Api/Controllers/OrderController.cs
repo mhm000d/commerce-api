@@ -3,16 +3,21 @@ using Commerce.Api.Mappings;
 using Commerce.Application.Models;
 using Commerce.Application.Services.Orders;
 using Commerce.Contracts.Orders;
+using Commerce.Contracts.Common;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commerce.Api.Controllers;
 
 [ApiController]
 [Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class OrderController(IOrderService orderService) : ControllerBase
 {
     [HttpPost(ApiEndpoints.Orders.Checkout)]
+    [ProducesResponseType(typeof(CheckoutResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Checkout(
         [FromBody] CheckoutRequest request,
         CancellationToken ct)
@@ -38,6 +43,7 @@ public class OrderController(IOrderService orderService) : ControllerBase
     }
     
     [HttpGet(ApiEndpoints.Orders.GetCheckoutSessionStatus)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSessionStatus(
         [FromQuery] string sessionId,
         CancellationToken ct)
@@ -47,6 +53,8 @@ public class OrderController(IOrderService orderService) : ControllerBase
     }
     
     [HttpGet(ApiEndpoints.Orders.GetOrder)]
+    [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetOrder(Guid id, CancellationToken ct)
     {
         var order = await orderService.GetOrderAsync(GetUserId(), id, ct);
@@ -54,6 +62,7 @@ public class OrderController(IOrderService orderService) : ControllerBase
     }
     
     [HttpGet(ApiEndpoints.Orders.GetOrders)]
+    [ProducesResponseType(typeof(PagedResponse<OrderResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetOrders(
         [FromQuery] int page     = 1,
         [FromQuery] int pageSize = 20,
@@ -67,6 +76,8 @@ public class OrderController(IOrderService orderService) : ControllerBase
     }
     
     [HttpPost(ApiEndpoints.Orders.CancelOrder)]
+    [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
     {
         var order = await orderService.CancelOrderAsync(GetUserId(), id, ct);
