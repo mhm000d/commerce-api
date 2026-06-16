@@ -102,9 +102,12 @@ public record ProductSpecification(string Key, string Value);
 
 public enum Category
 {
-    Electronics,
-    Televisions,
+    Mobile,
     Laptops,
+    Televisions,
     Games,
+    Appliance,
+    Electronics,
+    Home,
     Other
 }
