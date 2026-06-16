@@ -71,7 +71,8 @@ public static class ApiServiceExtensions
 
     public static IServiceCollection AddApiHealthChecks(this IServiceCollection services)
     {
-        services.AddHealthChecks();
+        services.AddHealthChecks()
+            .AddCheck<DatabaseHealthCheck>("database");
         return services;
     }
 
