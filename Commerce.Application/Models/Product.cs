@@ -1,3 +1,5 @@
+using NpgsqlTypes;
+
 namespace Commerce.Application.Models;
 
 public class Product
@@ -11,6 +13,7 @@ public class Product
     public int RatingCount { get; set; }
     public required Category Category { get; set; }
     public ICollection<ProductSpecification> Specifications { get; set; } = [];
+    public NpgsqlTsVector? SearchVector { get; set; }
     public bool IsDeleted { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
     public DateTimeOffset CreatedAt { get; init; }
@@ -102,11 +105,11 @@ public record ProductSpecification(string Key, string Value);
 
 public enum Category
 {
-    Mobile,
+    Mobiles,
     Laptops,
     Televisions,
     Games,
-    Appliance,
+    Appliances,
     Electronics,
     Home,
     Other

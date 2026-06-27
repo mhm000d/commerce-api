@@ -1,4 +1,3 @@
-using System.Collections;
 using Commerce.Contracts.ProductImages;
 
 namespace Commerce.Contracts.Products;
@@ -18,10 +17,3 @@ public record ProductResponse(
 
 public record ProductSpecification(string Key, string Value);
 
-// public enum Category
-// {
-//     Televisions,
-//     Laptops,
-//     Games,
-//     Other
-// }

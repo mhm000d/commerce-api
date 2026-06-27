@@ -28,59 +28,98 @@ public class ProductService(
         var page = Math.Max(catalogQuery.Page, 1);
         var pageSize = Math.Clamp(catalogQuery.PageSize, 1, 100);
 
-        var query = dbContext.Products
-            .AsNoTracking();
+        IQueryable<Product> query;
 
-        if (catalogQuery.Category.HasValue)
-            query = query.Where(p => p.Category == catalogQuery.Category.Value);
-
-        foreach (var term in GetSearchTerms(catalogQuery.Search))
+        if (!string.IsNullOrWhiteSpace(catalogQuery.Search))
         {
-            var pattern = $"%{EscapeLikePattern(term)}%";
-            query = query.Where(p =>
-                EF.Functions.ILike(p.Name, pattern, "\\") ||
-                EF.Functions.ILike(p.Description, pattern, "\\"));
+            var searchTerm = catalogQuery.Search.Trim();
+
+            var clean = new string(searchTerm.Where(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)).ToArray());
+
+            var words = clean
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(w => w + ":*")
+                .ToList();
+
+            var tsqueryString = string.Join(" & ", words);
+
+            var idSql = @"
+            SELECT p.""Id""
+            FROM ""Products"" p
+            WHERE p.""SearchVector"" @@ to_tsquery('english', {0})";
+
+            var parameters = new List<object> { tsqueryString };
+
+            if (catalogQuery.Category.HasValue)
+            {
+                idSql += " AND p.\"Category\" = {" + parameters.Count + "}";
+                parameters.Add(catalogQuery.Category.Value);
+            }
+
+            idSql += " ORDER BY ts_rank(p.\"SearchVector\", to_tsquery('english', {0})) DESC";
+
+            var ids = await dbContext.Database
+                .SqlQueryRaw<Guid>(idSql, parameters.ToArray())
+                .ToListAsync(ct);
+
+            if (ids.Count == 0)
+                return (Enumerable.Empty<Product>(), 0);
+            
+            var productsQuery = dbContext.Products
+                .AsNoTracking()
+                .Include(p => p.Images)
+                .Where(p => ids.Contains(p.Id));
+            
+            var pagedIds = ids
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            if (pagedIds.Count == 0)
+                return (Enumerable.Empty<Product>(), ids.Count);
+
+            var products = await dbContext.Products
+                .AsNoTracking()
+                .Include(p => p.Images)
+                .Where(p => pagedIds.Contains(p.Id))
+                .ToListAsync(ct);
+
+            var orderedProducts = pagedIds
+                .Select(id => products.FirstOrDefault(p => p.Id == id))
+                .Where(p => p != null)
+                .ToList();
+
+            return (orderedProducts!, ids.Count);
         }
-
-        var totalCount = await query.CountAsync(ct);
-
-        query = catalogQuery.SortBy switch
+        else
         {
-            ProductSortBy.PriceAsc => query
-                .OrderBy(p => p.Price)
-                .ThenByDescending(p => p.CreatedAt),
+            query = dbContext.Products
+                .AsNoTracking()
+                .Include(p => p.Images);
 
-            ProductSortBy.PriceDesc => query
-                .OrderByDescending(p => p.Price)
-                .ThenByDescending(p => p.CreatedAt),
+            if (catalogQuery.Category.HasValue)
+                query = query.Where(p => p.Category == catalogQuery.Category.Value);
 
-            ProductSortBy.RatingDesc => query
-                .OrderByDescending(p => p.AverageRating ?? 0m)
-                .ThenByDescending(p => p.RatingCount)
-                .ThenByDescending(p => p.CreatedAt),
+            query = catalogQuery.SortBy switch
+            {
+                ProductSortBy.PriceAsc => query.OrderBy(p => p.Price).ThenByDescending(p => p.CreatedAt),
+                ProductSortBy.PriceDesc => query.OrderByDescending(p => p.Price).ThenByDescending(p => p.CreatedAt),
+                ProductSortBy.RatingDesc => query.OrderByDescending(p => p.AverageRating ?? 0m)
+                    .ThenByDescending(p => p.RatingCount).ThenByDescending(p => p.CreatedAt),
+                ProductSortBy.RatingAsc => query.OrderBy(p => p.AverageRating ?? 0m).ThenByDescending(p => p.CreatedAt),
+                ProductSortBy.NameAsc => query.OrderBy(p => p.Name).ThenByDescending(p => p.CreatedAt),
+                ProductSortBy.NameDesc => query.OrderByDescending(p => p.Name).ThenByDescending(p => p.CreatedAt),
+                _ => query.OrderByDescending(p => p.CreatedAt),
+            };
 
-            ProductSortBy.RatingAsc => query
-                .OrderBy(p => p.AverageRating ?? 0m)
-                .ThenByDescending(p => p.CreatedAt),
+            var totalCount = await query.CountAsync(ct);
+            var products = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
 
-            ProductSortBy.NameAsc => query
-                .OrderBy(p => p.Name)
-                .ThenByDescending(p => p.CreatedAt),
-
-            ProductSortBy.NameDesc => query
-                .OrderByDescending(p => p.Name)
-                .ThenByDescending(p => p.CreatedAt),
-
-            _ => query.OrderByDescending(p => p.CreatedAt)
-        };
-
-        var products = await query
-            .Include(p => p.Images)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-
-        return (products, totalCount);
+            return (products, totalCount);
+        }
     }
 
     public async Task<Product> CreateAsync(Product product, CancellationToken ct = default)

@@ -91,7 +91,8 @@ public static class ProductMappings
                 p.Price,
                 p.AverageRating,
                 p.Images
-                    .OrderBy(i => i.DisplayOrder)
+                    .OrderBy(i => i.IsPrimary ? 0 : 1) // Primary first
+                    .ThenBy(i => i.DisplayOrder)
                     .Take(2)
                     .Select(i => new ProductImageResponse(
                         i.Id,
@@ -130,7 +131,8 @@ public static class ProductMappings
 
         var specs = req.Specifications?
             .Select(s => new ProductSpecification(s.Key, s.Value))
-            .ToList() ?? throw new ValidationException($"Invalid specification: {req.Specifications}", "SPECIFIC_CANT_BE_EMPTY");
+            .ToList() ?? throw new ValidationException($"Invalid specification: {req.Specifications}",
+            "SPECIFIC_CANT_BE_EMPTY");
 
         return new Product
         {

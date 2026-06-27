@@ -49,6 +49,13 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             sa.Property(s => s.Key).IsRequired().HasMaxLength(50);
             sa.Property(s => s.Value).IsRequired().HasMaxLength(50);
         });
+
+        builder.Property(p => p.SearchVector)
+            .HasComputedColumnSql(
+                "to_tsvector('english', \"Name\" || ' ' || COALESCE(\"Description\", ''))",
+                stored: true) // stored: true for computed column
+            .HasColumnType("tsvector")
+            .HasDefaultValue(null);
         
         builder.Property(p => p.AverageRating)
             .IsRequired(false)
