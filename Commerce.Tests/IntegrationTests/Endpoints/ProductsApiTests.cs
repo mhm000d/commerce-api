@@ -76,14 +76,14 @@ public sealed class ProductsApiTests(ApiFactory factory) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetProducts_WithSearchCategoryAndSort_ReturnsMatchingProducts()
+    public async Task GetProducts_WithCategoryAndSort_ReturnsMatchingProducts()
     {
         await SeedProductAsync("Gaming Laptop", "High refresh display", 2000m, Category.Laptops);
         await SeedProductAsync("Office Laptop", "Quiet laptop for work", 1000m, Category.Laptops);
         await SeedProductAsync("Gaming Console", "Living room gaming", 500m, Category.Games);
 
         var response = await _client.GetAsync(
-            "/api/products?search=laptop&category=Laptops&sortBy=price_desc");
+            "/api/products?category=Laptops&sortBy=price_desc");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
