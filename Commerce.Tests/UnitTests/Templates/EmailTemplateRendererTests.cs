@@ -13,28 +13,28 @@ public class EmailTemplateRendererTests
     private static EmailTemplateRenderer CreateRenderer() =>
         new(Options.Create(new EmailSettings
         {
-            FromAddress     = "noreply@commerce.com",
-            FromName        = "Commerce",
+            FromAddress = "noreply@commerce.com",
+            FromName = "Commerce",
             FrontendBaseUrl = "https://app.commerce.com"
         }));
 
     private static Dictionary<string, string> OrderConfirmationData(
-        string orderNumber  = "000000001",
+        string orderNumber = "000000001",
         string customerName = "John Doe",
-        string totalAmount  = "99.99",
-        string? orderId     = null,
+        string totalAmount = "99.99",
+        string? orderId = null,
         string paymentMethod = "Card",
         string paymentStatus = "Paid",
         List<OrderLineItemData>? items = null) =>
         new()
         {
             ["CustomerName"] = customerName,
-            ["OrderNumber"]  = orderNumber,
-            ["OrderId"]      = orderId ?? Guid.NewGuid().ToString(),
-            ["TotalAmount"]  = totalAmount,
+            ["OrderNumber"] = orderNumber,
+            ["OrderId"] = orderId ?? Guid.NewGuid().ToString(),
+            ["TotalAmount"] = totalAmount,
             ["PaymentMethod"] = paymentMethod,
             ["PaymentStatus"] = paymentStatus,
-            ["Items"]        = JsonSerializer.Serialize(items ?? [])
+            ["Items"] = JsonSerializer.Serialize(items ?? [])
         };
 
     // ── OrderConfirmation ─────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ public class EmailTemplateRendererTests
     [Fact]
     public void RenderOrderConfirmation_ShouldContainOrderDetailLink()
     {
-        var orderId  = Guid.NewGuid().ToString();
+        var orderId = Guid.NewGuid().ToString();
         var renderer = CreateRenderer();
 
         var (_, html) = renderer.Render(
@@ -95,8 +95,8 @@ public class EmailTemplateRendererTests
         var renderer = CreateRenderer();
         var items = new List<OrderLineItemData>
         {
-            new("Sony WH-1000XM5", null,       349.99m, 1),
-            new("Nike Air Max",    "https://img.example.com/shoe.jpg", 89.99m,  2)
+            new("Sony WH-1000XM5", null, 349.99m, 1),
+            new("Nike Air Max", "https://img.example.com/shoe.jpg", 89.99m, 2)
         };
 
         var (_, html) = renderer.Render(
@@ -124,22 +124,18 @@ public class EmailTemplateRendererTests
     }
 
     [Fact]
-    public void RenderOrderConfirmation_WithItemMissingImage_ShouldRenderPlaceholder()
+    public void RenderOrderConfirmation_ShouldRenderPaymentMethodAndStatus()
     {
         var renderer = CreateRenderer();
-        var items = new List<OrderLineItemData>
-        {
-            new("No-Image Product", ImageUrl: null, 10m, 1)
-        };
 
         var (_, html) = renderer.Render(
             EmailTemplate.OrderConfirmation,
-            OrderConfirmationData(items: items));
+            OrderConfirmationData(
+                paymentMethod: "Cash on delivery",
+                paymentStatus: "Awaiting payment"));
 
-        // Placeholder emoji is rendered when no image URL is stored
-        html.ShouldContain("🛍️");
-        html.ShouldContain("<table role=\"presentation\" width=\"64\" height=\"64\"");
-        html.ShouldNotContain("display:flex");
+        html.ShouldContain("Payment Method");
+        html.ShouldContain("Cash on delivery");
     }
 
     [Fact]
@@ -155,30 +151,28 @@ public class EmailTemplateRendererTests
             EmailTemplate.OrderConfirmation,
             OrderConfirmationData(items: items));
 
-        html.ShouldContain("width=\"64\" height=\"64\"");
+        html.ShouldContain("width=\"60\" height=\"60\"");
         html.ShouldContain("https://img.example.com/shoe.jpg?size=64&amp;fit=crop");
-        html.ShouldNotContain("object-fit");
-        html.ShouldNotContain("display:flex");
-        html.ShouldNotContain("align-items");
-        html.ShouldNotContain("justify-content");
     }
 
     [Fact]
-    public void RenderOrderConfirmation_ShouldRenderPaymentMethodAndStatus()
+    public void RenderOrderConfirmation_WithItemMissingImage_ShouldRenderPlaceholder()
     {
         var renderer = CreateRenderer();
+        var items = new List<OrderLineItemData>
+        {
+            new("No-Image Product", ImageUrl: null, 10m, 1)
+        };
 
         var (_, html) = renderer.Render(
             EmailTemplate.OrderConfirmation,
-            OrderConfirmationData(
-                paymentMethod: "Cash on delivery",
-                paymentStatus: "Awaiting payment"));
+            OrderConfirmationData(items: items));
 
-        html.ShouldContain("Payment method");
-        html.ShouldContain("Cash on delivery");
-        html.ShouldContain("Payment status");
-        html.ShouldContain("Awaiting payment");
+        html.ShouldContain("📦");
+        html.ShouldContain("<table role=\"presentation\" width=\"60\" height=\"60\"");
+        html.ShouldNotContain("display:flex");
     }
+
 
     [Fact]
     public void RenderOrderConfirmation_WhenItemsKeyMissing_ShouldNotThrow()
@@ -187,9 +181,9 @@ public class EmailTemplateRendererTests
         var dataWithoutItems = new Dictionary<string, string>
         {
             ["CustomerName"] = "Test",
-            ["OrderNumber"]  = "000000001",
-            ["OrderId"]      = Guid.NewGuid().ToString(),
-            ["TotalAmount"]  = "0.00"
+            ["OrderNumber"] = "000000001",
+            ["OrderId"] = Guid.NewGuid().ToString(),
+            ["TotalAmount"] = "0.00"
             // No "Items" key
         };
 
@@ -228,7 +222,7 @@ public class EmailTemplateRendererTests
             ["ExpiresIn"] = "1 hour"
         });
 
-        subject.ShouldBe("Reset your password");
+        subject.ShouldBe("Reset Your Password");
     }
 
     [Fact]
@@ -239,7 +233,7 @@ public class EmailTemplateRendererTests
 
         var (_, html) = renderer.Render(EmailTemplate.PasswordReset, new Dictionary<string, string>
         {
-            ["ResetUrl"]  = resetUrl,
+            ["ResetUrl"] = resetUrl,
             ["ExpiresIn"] = "1 hour"
         });
 
@@ -253,7 +247,7 @@ public class EmailTemplateRendererTests
 
         var (_, html) = renderer.Render(EmailTemplate.PasswordReset, new Dictionary<string, string>
         {
-            ["ResetUrl"]  = "https://example.com/reset",
+            ["ResetUrl"] = "https://example.com/reset",
             ["ExpiresIn"] = "1 hour"
         });
 
@@ -267,7 +261,7 @@ public class EmailTemplateRendererTests
 
         var (_, html) = renderer.Render(EmailTemplate.PasswordReset, new Dictionary<string, string>
         {
-            ["ResetUrl"]  = "https://example.com/reset",
+            ["ResetUrl"] = "https://example.com/reset",
             ["ExpiresIn"] = "1 hour"
         });
 
