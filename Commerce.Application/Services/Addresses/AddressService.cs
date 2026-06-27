@@ -4,6 +4,7 @@ using Commerce.Application.Models;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ValidationException = Commerce.Application.Exceptions.ValidationException;
 
 namespace Commerce.Application.Services.Addresses;
 
@@ -12,6 +13,8 @@ public class AddressService(
     IValidator<Address> addressValidator,
     ILogger<AddressService> logger) : IAddressService
 {
+    private const int MaxAddressesPerUser = 5;
+    
     public async Task<IReadOnlyList<Address>> GetAddressesAsync(Guid userId, CancellationToken ct = default)
     {
         return await dbContext.Addresses
@@ -26,6 +29,19 @@ public class AddressService(
         string area, string street, string? buildingNumber, string? floor, string? apartment, string? addressName,
         bool isDefault, CancellationToken ct = default)
     {
+        await dbContext.Database.ExecuteSqlRawAsync(
+            "SELECT 1 FROM \"Users\" WHERE \"Id\" = {0} FOR UPDATE",
+            [userId],
+            ct);
+
+        var currentCount = await dbContext.Addresses
+            .CountAsync(a => a.UserId == userId, ct);
+        
+        if (currentCount >= MaxAddressesPerUser)
+            throw new ValidationException(
+                $"You can only have up to {MaxAddressesPerUser} addresses.",
+                "ADDRESS_LIMIT_EXCEEDED");
+        
         // first address is always default, no matter what the user sent.
         var existingCount = await dbContext.Addresses
             .CountAsync(a => a.UserId == userId, ct);
@@ -69,19 +85,28 @@ public class AddressService(
         if (address.UserId != userId)
             throw new ForbiddenException(
                 "You can only edit your own addresses.", "FORBIDDEN");
+        
+        if (!isDefault && address.IsDefault)
+        {
+            var total = await dbContext.Addresses.CountAsync(a => a.UserId == userId, ct);
+            if (total == 1)
+                throw new ValidationException(
+                    "You must have at least one default address.",
+                    "DEFAULT_ADDRESS_REQUIRED");
+        }
 
         address.Update(
             fullName, phoneNumber, country, governorate,
             area, street, buildingNumber, floor, apartment, addressName);
 
         await addressValidator.ValidateAndThrowAsync(address, ct);
-
+        
         await using var tx = await dbContext.Database.BeginTransactionAsync(ct);
-
+        
         if (isDefault && !address.IsDefault)
         {
-            // becoming the new default — clear siblings first.
             await ClearDefaultsAsync(userId, excludeId: addressId, ct);
+            await dbContext.SaveChangesAsync(ct);
             address.SetAsDefault();
         }
         else if (!isDefault && address.IsDefault)
