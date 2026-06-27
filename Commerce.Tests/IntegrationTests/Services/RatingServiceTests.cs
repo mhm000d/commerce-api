@@ -57,6 +57,25 @@ public class RatingServiceTests(DatabaseFixture fixture) : IntegrationTestBase(f
                 .SetProperty(p => p.IsDeleted, true)
                 .SetProperty(p => p.DeletedAt, DateTimeOffset.UtcNow));
     }
+
+    private async Task SimulatePurchaseAsync(Guid userId, Guid productId)
+    {
+        var snapshot = AddressSnapshot.From(
+            Address.Create(Guid.NewGuid(), "Test User", "01012345678",
+                "Egypt", "Cairo", "Nasr City", "Street 9",
+                "12", "3", "7", "Home", isDefault: true));
+        var order = Order.Create(userId, $"{Random.Shared.Next(1000000):D9}", snapshot);
+        var item = OrderItem.Create(order.Id, productId, quantity: 1, unitPrice: 10m);
+        order.AddItem(item);
+        order.MarkAsPaid();
+        await SaveAsync(order);
+    }
+
+    private async Task<Rating> CreateRatingWithPurchaseAsync(Guid productId, Guid userId, int score, string? comment)
+    {
+        await SimulatePurchaseAsync(userId, productId);
+        return await _ratingService.CreateRatingAsync(productId, userId, score, comment);
+    }
     
     // ── CreateRatingAsync ─────────────────────────────────────────────────────
     [Fact]
@@ -65,7 +84,7 @@ public class RatingServiceTests(DatabaseFixture fixture) : IntegrationTestBase(f
         var user = await CreateUserAsync();
         var product = await CreateProductAsync();
 
-        var result = await _ratingService.CreateRatingAsync(
+        var result = await CreateRatingWithPurchaseAsync(
             productId: product.Id,
             userId: user.Id,
             score: 4,
@@ -101,8 +120,8 @@ public class RatingServiceTests(DatabaseFixture fixture) : IntegrationTestBase(f
         var userB = await CreateUserAsync("b@example.com");
         var product = await CreateProductAsync();
 
-        await _ratingService.CreateRatingAsync(product.Id, userA.Id, score: 4, comment: null);
-        await _ratingService.CreateRatingAsync(product.Id, userB.Id, score: 2, comment: null);
+        await CreateRatingWithPurchaseAsync(product.Id, userA.Id, score: 4, comment: null);
+        await CreateRatingWithPurchaseAsync(product.Id, userB.Id, score: 2, comment: null);
 
         // Act
         var updatedProduct = await DbContext.Products
@@ -136,10 +155,10 @@ public class RatingServiceTests(DatabaseFixture fixture) : IntegrationTestBase(f
         var product = await CreateProductAsync();
 
         // First rating succeeds
-        await _ratingService.CreateRatingAsync(product.Id, user.Id, score: 5, comment: null);
+        await CreateRatingWithPurchaseAsync(product.Id, user.Id, score: 5, comment: null);
 
         // Second rating on the same product by the same user
-        var act = () => _ratingService.CreateRatingAsync(
+        var act = () => CreateRatingWithPurchaseAsync(
             productId: product.Id,
             userId: user.Id,
             score: 3,
@@ -173,8 +192,8 @@ public class RatingServiceTests(DatabaseFixture fixture) : IntegrationTestBase(f
         var userB = await CreateUserAsync("b@example.com");
         var product = await CreateProductAsync();
 
-        var ratingA = await _ratingService.CreateRatingAsync(product.Id, userA.Id, score: 4, comment: null);
-        await _ratingService.CreateRatingAsync(product.Id, userB.Id, score: 2, comment: null);
+        var ratingA = await CreateRatingWithPurchaseAsync(product.Id, userA.Id, score: 4, comment: null);
+        await CreateRatingWithPurchaseAsync(product.Id, userB.Id, score: 2, comment: null);
 
         // Delete user A's rating
         await _ratingService.DeleteRatingAsync(ratingA.Id, userA.Id);
@@ -202,7 +221,7 @@ public class RatingServiceTests(DatabaseFixture fixture) : IntegrationTestBase(f
         var user = await CreateUserAsync();
         var product = await CreateProductAsync();
 
-        var rating = await _ratingService.CreateRatingAsync(
+        var rating = await CreateRatingWithPurchaseAsync(
             product.Id, user.Id, score: 5, comment: null);
 
         await _ratingService.DeleteRatingAsync(rating.Id, user.Id);
@@ -236,10 +255,10 @@ public class RatingServiceTests(DatabaseFixture fixture) : IntegrationTestBase(f
         var userB = await CreateUserAsync("b@example.com");
         var product = await CreateProductAsync();
 
-        var first = await _ratingService.CreateRatingAsync(product.Id, userA.Id, score: 4, comment: "First");
-        var second = await _ratingService.CreateRatingAsync(product.Id, userB.Id, score: 2, comment: "Second");
+        var first = await CreateRatingWithPurchaseAsync(product.Id, userA.Id, score: 4, comment: "First");
+        var second = await CreateRatingWithPurchaseAsync(product.Id, userB.Id, score: 2, comment: "Second");
 
-        var ratings = await _ratingService.GetRatingsAsync(product.Id);
+        var (ratings, _) = await _ratingService.GetRatingsAsync(product.Id, 1, 10, "newest");
 
         ratings.Count.ShouldBe(2);
         
@@ -256,7 +275,7 @@ public class RatingServiceTests(DatabaseFixture fixture) : IntegrationTestBase(f
     {
         var product = await CreateProductAsync();
 
-        var ratings = await _ratingService.GetRatingsAsync(product.Id);
+        var (ratings, _) = await _ratingService.GetRatingsAsync(product.Id, 1, 10, "newest");
 
         ratings.ShouldBeEmpty();
     }
@@ -272,10 +291,10 @@ public class RatingServiceTests(DatabaseFixture fixture) : IntegrationTestBase(f
         // use two different users to keep the unique index happy.
         var user2 = await CreateUserAsync("user2@example.com");
 
-        await _ratingService.CreateRatingAsync(targetProduct.Id, user.Id, score: 5, comment: null);
-        await _ratingService.CreateRatingAsync(otherProduct.Id, user2.Id, score: 1, comment: null);
+        await CreateRatingWithPurchaseAsync(targetProduct.Id, user.Id, score: 5, comment: null);
+        await CreateRatingWithPurchaseAsync(otherProduct.Id, user2.Id, score: 1, comment: null);
 
-        var ratings = await _ratingService.GetRatingsAsync(targetProduct.Id);
+        var (ratings, _) = await _ratingService.GetRatingsAsync(targetProduct.Id, 1, 10, "newest");
 
         ratings.Count.ShouldBe(1);
         ratings[0].ProductId.ShouldBe(targetProduct.Id);

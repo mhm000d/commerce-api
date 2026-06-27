@@ -13,8 +13,6 @@ namespace Commerce.Tests.IntegrationTests.Endpoints;
 public sealed class RatingsApiTests(ApiFactory factory)
     : IAsyncLifetime
 {
-    // Fresh client per test via InitializeAsync — prevents DefaultRequestHeaders
-    // set in one test from bleeding into the next.
     private HttpClient _client = null!;
 
     public async Task InitializeAsync()
@@ -48,8 +46,6 @@ public sealed class RatingsApiTests(ApiFactory factory)
             new AuthenticationHeaderValue("Bearer", accessToken);
     }
 
-    // Bypasses the admin HTTP layer — products are seed data for rating tests,
-    // not the thing under test here.
     private async Task<Product> SeedProductAsync()
     {
         await using var db = factory.CreateDbContext();
@@ -65,6 +61,42 @@ public sealed class RatingsApiTests(ApiFactory factory)
         db.Products.Add(product);
         await db.SaveChangesAsync();
         return product;
+    }
+
+    private async Task SeedOrderForUserAsync(Guid userId, Guid productId, decimal price = 29.99m)
+    {
+        await using var db = factory.CreateDbContext();
+
+        var addressEntity = Address.Create(
+            userId,
+            fullName: "Test User",
+            phoneNumber: "+20123456789",
+            country: "Egypt",
+            governorate: "Cairo",
+            area: "Maadi",
+            street: "123 Main St",
+            buildingNumber: "5",
+            floor: "2",
+            apartment: "3",
+            addressName: "Home"
+        );
+        var shippingAddress = addressEntity.ToSnapshot();
+
+        var order = Order.Create(
+            userId,
+            orderNumber: $"TEST-ORDER-{Guid.NewGuid():N}"[..10],
+            shippingAddress: shippingAddress
+        );
+
+        var item = OrderItem.Create(order.Id, productId, quantity: 1, unitPrice: price);
+        order.AddItem(item);
+
+        order.SetTotalAmount(price);
+
+        order.MarkAsPaid();
+
+        db.Orders.Add(order);
+        await db.SaveChangesAsync();
     }
 
     private async Task<RatingResponse> CreateRatingAsync(
@@ -84,9 +116,10 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Post_WithValidData_Returns201AndRatingResponse()
     {
-        var (token, _) = await RegisterAsync();
+        var (token, userId) = await RegisterAsync();
         Authorize(token);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(userId, product.Id);
 
         var response = await _client.PostAsJsonAsync(
             $"/api/products/{product.Id}/ratings",
@@ -116,9 +149,10 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Post_WithInvalidScore_Returns400()
     {
-        var (token, _) = await RegisterAsync();
+        var (token, userId) = await RegisterAsync();
         Authorize(token);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(userId, product.Id);
 
         var response = await _client.PostAsJsonAsync(
             $"/api/products/{product.Id}/ratings",
@@ -130,14 +164,13 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Post_WhenDuplicateRating_Returns409()
     {
-        var (token, _) = await RegisterAsync();
+        var (token, userId) = await RegisterAsync();
         Authorize(token);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(userId, product.Id);
 
-        // First rating
         await CreateRatingAsync(product.Id);
 
-        // Second rating — same user, same product
         var response = await _client.PostAsJsonAsync(
             $"/api/products/{product.Id}/ratings",
             new RatingRequest(Score: 3, Comment: null));
@@ -150,9 +183,10 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Put_ByOwner_Returns200WithUpdatedData()
     {
-        var (token, _) = await RegisterAsync();
+        var (token, userId) = await RegisterAsync();
         Authorize(token);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(userId, product.Id);
         var rating = await CreateRatingAsync(product.Id, score: 5, comment: "Loved it");
 
         var response = await _client.PutAsJsonAsync(
@@ -169,10 +203,10 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Put_WhenUnauthenticated_Returns401()
     {
-        // Register and create a rating, then remove auth header
-        var (token, _) = await RegisterAsync();
+        var (token, userId) = await RegisterAsync();
         Authorize(token);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(userId, product.Id);
         var rating = await CreateRatingAsync(product.Id);
 
         _client.DefaultRequestHeaders.Authorization = null;
@@ -187,13 +221,12 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Put_WhenNotOwner_Returns403()
     {
-        // Owner creates a rating
-        var (ownerToken, _) = await RegisterAsync("owner@example.com", "Owner");
+        var (ownerToken, ownerId) = await RegisterAsync("owner@example.com", "Owner");
         Authorize(ownerToken);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(ownerId, product.Id);
         var rating = await CreateRatingAsync(product.Id, score: 5);
 
-        // Intruder tries to update it
         var (intruderToken, _) = await RegisterAsync("intruder@example.com", "Intruder");
         Authorize(intruderToken);
 
@@ -207,9 +240,10 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Put_WithInvalidScore_Returns400()
     {
-        var (token, _) = await RegisterAsync();
+        var (token, userId) = await RegisterAsync();
         Authorize(token);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(userId, product.Id);
         var rating = await CreateRatingAsync(product.Id, score: 5);
 
         var response = await _client.PutAsJsonAsync(
@@ -224,9 +258,10 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Delete_ByOwner_Returns204()
     {
-        var (token, _) = await RegisterAsync();
+        var (token, userId) = await RegisterAsync();
         Authorize(token);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(userId, product.Id);
         var rating = await CreateRatingAsync(product.Id);
 
         var response = await _client.DeleteAsync($"/api/ratings/{rating.Id}");
@@ -237,9 +272,10 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Delete_WhenUnauthenticated_Returns401()
     {
-        var (token, _) = await RegisterAsync();
+        var (token, userId) = await RegisterAsync();
         Authorize(token);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(userId, product.Id);
         var rating = await CreateRatingAsync(product.Id);
 
         _client.DefaultRequestHeaders.Authorization = null;
@@ -252,9 +288,10 @@ public sealed class RatingsApiTests(ApiFactory factory)
     [Fact]
     public async Task Delete_WhenNotOwner_Returns403()
     {
-        var (ownerToken, _) = await RegisterAsync("owner@example.com", "Owner");
+        var (ownerToken, ownerId) = await RegisterAsync("owner@example.com", "Owner");
         Authorize(ownerToken);
         var product = await SeedProductAsync();
+        await SeedOrderForUserAsync(ownerId, product.Id);
         var rating = await CreateRatingAsync(product.Id, score: 5);
 
         var (intruderToken, _) = await RegisterAsync("intruder@example.com", "Intruder");
