@@ -414,7 +414,7 @@ public class OrderServiceTests(DatabaseFixture fixture) : IntegrationTestBase(fi
     }
 
     [Fact]
-    public async Task CancelOrder_WhenPaidWithCompletedPayment_ShouldInitiateRefund()
+    public async Task CancelOrder_WhenPaidWithCompletedPayment_ShouldThrowConflictException()
     {
         var (user, address, _) = await ArrangeCheckoutAsync();
         var (placed, _) = await _orderService.CheckoutAsync(
@@ -431,13 +431,8 @@ public class OrderServiceTests(DatabaseFixture fixture) : IntegrationTestBase(fi
         foreach (var e in DbContext.ChangeTracker.Entries().ToList())
             e.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
 
-        await _orderService.CancelOrderAsync(user.Id, placed.Id);
-
-        await _stripeMock.Received(1).RefundAsync("pi_test_intent_abc", Arg.Any<CancellationToken>());
-
-        var updatedPayment = await DbContext.Payments.AsNoTracking()
-            .SingleAsync(p => p.OrderId == placed.Id);
-        updatedPayment.Status.ShouldBe(PaymentStatus.Refunded);
+        var act = () => _orderService.CancelOrderAsync(user.Id, placed.Id);
+        await act.ShouldThrowAsync<ConflictException>();
     }
 
     [Fact]
