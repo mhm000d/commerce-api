@@ -12,7 +12,19 @@ public class AdminService(
     IStripeService stripeService,
     ILogger<AdminService> logger) : IAdminService
 {
-    public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllOrdersAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<Order> GetOrderByIdAsync(Guid orderId, CancellationToken ct = default)
+    {
+        return await dbContext.Orders
+                   .Include(o => o.Items)
+                   .ThenInclude(i => i.Product)
+                   .ThenInclude(p => p.Images.Where(img => img.IsPrimary))
+                   .Include(o => o.Payment)
+                   .FirstOrDefaultAsync(o => o.Id == orderId, ct)
+               ?? throw new NotFoundException("Order not found.", "ORDER_NOT_FOUND");
+    }
+
+    public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllOrdersAsync(int page, int pageSize,
+        CancellationToken ct = default)
     {
         var query = dbContext.Orders
             .OrderByDescending(o => o.CreatedAt);
@@ -38,50 +50,78 @@ public class AdminService(
                         .FirstOrDefaultAsync(o => o.Id == orderId, ct)
                     ?? throw new NotFoundException("Order not found.", "ORDER_NOT_FOUND");
 
+        var isCOD = order.Payment?.PaymentMethod?.Equals("cash_on_delivery", StringComparison.OrdinalIgnoreCase) == true;
+
+        logger.LogInformation("Updating order status. OrderId={OrderId} CurrentStatus={CurrentStatus} NewStatus={NewStatus} IsCOD={IsCOD}",
+            orderId, order.Status, newStatus, isCOD);
+
         try
         {
-            switch (newStatus)
+            if (isCOD)
             {
-                // Admins can manually mark an order paid (e.g., offline payment or testing).
-                case OrderStatus.Paid:
-                    order.MarkAsPaid();
-                    break;
+                // Define allowed transitions for COD
+                bool allowed = (order.Status, newStatus) switch
+                {
+                    // Placed → Shipped (skip Paid)
+                    (OrderStatus.Placed, OrderStatus.Shipped) => true,
+                    // Shipped → Delivered
+                    (OrderStatus.Shipped, OrderStatus.Delivered) => true,
+                    // Delivered → Paid (payment collected on delivery)
+                    (OrderStatus.Delivered, OrderStatus.Paid) => true,
+                    // Any status → Cancelled (admin cancel)
+                    (_, OrderStatus.Cancelled) => true,
+                    // Allow other forward transitions (e.g., Placed → Delivered directly? Not typical, but we allow all forward)
+                    (_, _) => true
+                };
 
-                case OrderStatus.Shipped:
-                    order.MarkAsShipped();
-                    break;
+                if (!allowed)
+                    throw new ConflictException($"Invalid transition for COD order: {order.Status} → {newStatus}", "INVALID_ORDER_TRANSITION");
 
-                case OrderStatus.Delivered:
-                    order.MarkAsDelivered();
-                    break;
+                // Use AdminSetStatus to bypass the state machine
+                order.AdminSetStatus(newStatus);
 
-                case OrderStatus.Cancelled:
-                    order.Cancel(isAdmin: true);
+                // If cancelling, restore stock and initiate refund (if needed)
+                if (newStatus == OrderStatus.Cancelled)
                     await RestoreStockAndRefundAsync(order, ct);
-                    break;
-
-                // PLACED is the initial state — it can't be set manually.
-                default:
-                    throw new ValidationException(
-                        $"Status '{newStatus}' cannot be set via this endpoint.",
-                        "INVALID_STATUS");
+            }
+            else
+            {
+                // Card payments: use normal state machine
+                switch (newStatus)
+                {
+                    case OrderStatus.Paid:
+                        order.MarkAsPaid();
+                        break;
+                    case OrderStatus.Shipped:
+                        order.MarkAsShipped();
+                        break;
+                    case OrderStatus.Delivered:
+                        order.MarkAsDelivered();
+                        break;
+                    case OrderStatus.Cancelled:
+                        order.Cancel(isAdmin: true);
+                        await RestoreStockAndRefundAsync(order, ct);
+                        break;
+                    default:
+                        throw new ValidationException($"Status '{newStatus}' cannot be set.", "INVALID_STATUS");
+                }
             }
         }
         catch (InvalidOperationException ex)
         {
             throw new ConflictException(ex.Message, "INVALID_ORDER_TRANSITION");
         }
-        
+
         await dbContext.SaveChangesAsync(ct);
 
-        logger.LogInformation(
-            "Admin updated order status. OrderId={OrderId} NewStatus={NewStatus}",
-            orderId, newStatus);
+        logger.LogInformation("Admin updated order status. OrderId={OrderId} NewStatus={NewStatus}", orderId, newStatus);
 
+        await LoadOrderNavigationsAsync(order, ct);
         return order;
     }
-    
+
     // ── Private Helpers ───────────────────────────────────────────────────────
+
     private async Task RestoreStockAndRefundAsync(Order order, CancellationToken ct)
     {
         foreach (var item in order.Items)
@@ -96,5 +136,32 @@ public class AdminService(
                 "Refund initiated. OrderId={OrderId} PaymentId={PaymentId}",
                 order.Id, order.Payment.Id);
         }
+    }
+
+    /// <summary>
+    /// Loads navigation properties of an order that are not automatically loaded,
+    /// so the returned order object is complete when sent to the frontend.
+    /// </summary>
+    private async Task LoadOrderNavigationsAsync(Order order, CancellationToken ct)
+    {
+        if (!dbContext.Entry(order).Collection(o => o.Items).IsLoaded)
+            await dbContext.Entry(order).Collection(o => o.Items).LoadAsync(ct);
+
+        foreach (var item in order.Items)
+        {
+            if (!dbContext.Entry(item).Reference(i => i.Product).IsLoaded)
+                await dbContext.Entry(item).Reference(i => i.Product).LoadAsync(ct);
+
+            // Load only the primary image for each product
+            if (item.Product is not null && !dbContext.Entry(item.Product).Collection(p => p.Images).IsLoaded)
+                await dbContext.Entry(item.Product)
+                    .Collection(p => p.Images)
+                    .Query()
+                    .Where(img => img.IsPrimary)
+                    .LoadAsync(ct);
+        }
+
+        if (!dbContext.Entry(order).Reference(o => o.Payment).IsLoaded)
+            await dbContext.Entry(order).Reference(o => o.Payment).LoadAsync(ct);
     }
 }

@@ -4,6 +4,7 @@ namespace Commerce.Application.Services.Admin;
 
 public interface IAdminService
 {
+    Task<Order> GetOrderByIdAsync(Guid orderId, CancellationToken ct = default);
     Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllOrdersAsync(
         int page, int pageSize, CancellationToken ct = default);
 

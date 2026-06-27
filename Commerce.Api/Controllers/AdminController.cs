@@ -15,6 +15,15 @@ namespace Commerce.Api.Controllers;
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class AdminController(IAdminService adminService) : ControllerBase
 {
+    [HttpGet(ApiEndpoints.Admin.GetOrder)]
+    [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetOrder(Guid id, CancellationToken ct)
+    {
+        var order = await adminService.GetOrderByIdAsync(id, ct);
+        return Ok(order.ToResponse());
+    }
+    
     [HttpGet(ApiEndpoints.Admin.GetOrders)]
     [ProducesResponseType(typeof(PagedResponse<OrderResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetOrders(
