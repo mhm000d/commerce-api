@@ -211,7 +211,7 @@ public class AddressServiceTests(DatabaseFixture fixture) : IntegrationTestBase(
             fullName: "New Name", phoneNumber: "+201012345678",
             country: "Egypt", governorate: "Cairo", area: "Nasr City",
             street: "New Street", buildingNumber: null, floor: null,
-            apartment: null, addressName: "Work", isDefault: false);
+            apartment: null, addressName: "Work", isDefault: true);
 
         updated.FullName.ShouldBe("New Name");
         updated.Street.ShouldBe("New Street");
@@ -281,6 +281,7 @@ public class AddressServiceTests(DatabaseFixture fixture) : IntegrationTestBase(
         // (Unlike delete, there is no auto-promotion — the user made a deliberate choice.)
         var user = await CreateUserAsync();
         var address = await CreateAddressAsync(user.Id); // auto-default
+        var otherAddress = await CreateAddressAsync(user.Id, isDefault: false);
 
         await _addressService.UpdateAddressAsync(
             addressId: address.Id, userId: user.Id,

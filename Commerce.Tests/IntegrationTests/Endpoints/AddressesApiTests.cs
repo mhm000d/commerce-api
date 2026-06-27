@@ -182,7 +182,8 @@ public sealed class AddressesApiTests(ApiFactory factory)
         Authorize(token);
         var address = await CreateAddressAsync();
 
-        var updated = ValidRequest(fullName: "Updated Name");
+        // Ensure we keep the address as default (the only one)
+        var updated = ValidRequest(fullName: "Updated Name") with { IsDefault = true };
         var response = await _client.PutAsJsonAsync(
             $"/api/addresses/{address.Id}", updated);
 
