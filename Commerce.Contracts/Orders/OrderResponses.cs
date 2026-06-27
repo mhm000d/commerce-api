@@ -26,7 +26,10 @@ public record CheckoutResponse(
     decimal TotalAmount,
     string? StripeClientSecret); // null for Cash on Delivery
 
-public record CheckoutSessionStatusResponse(string Status, string? CustomerEmail);
+public record CheckoutSessionStatusResponse(
+    string Status,
+    string? CustomerEmail,
+    Guid? OrderId);
 
 public record AddressSnapshotResponse(
     string  FullName,

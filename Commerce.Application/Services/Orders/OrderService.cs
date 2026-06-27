@@ -33,6 +33,8 @@ public class OrderService(
                        .FirstOrDefaultAsync(c => c.UserId == userId, ct)
                    ?? throw new NotFoundException("Cart not found.", "CART_NOT_FOUND");
 
+        logger.LogInformation("Checkout: UserId={UserId}, CartId={CartId}, ItemCount={Count}", userId, cart?.Id, cart?.Items?.Count);
+        
         if (!cart.Items.Any())
             throw new ValidationException("Cart is empty.", "CART_EMPTY");
 
@@ -97,7 +99,10 @@ public class OrderService(
 
             await orderValidator.ValidateAndThrowAsync(order, ct);
 
-            cart.Clear();
+            if (paymentMethod == CheckoutPaymentMethod.CashOnDelivery)
+            {
+                cart.Clear();
+            }
 
             try
             {
@@ -183,7 +188,10 @@ public class OrderService(
         string sessionId, CancellationToken ct = default)
     {
         var session = await stripeService.GetSessionStatusAsync(sessionId, ct);
-        return new CheckoutSessionStatusResponse(session.Status, session.CustomerEmail);
+        var payment = await dbContext.Payments
+            .FirstOrDefaultAsync(p => p.PaymentProviderId == sessionId, ct);
+        
+        return new CheckoutSessionStatusResponse(session.Status, session.CustomerEmail, payment?.OrderId);
     }
 
     public async Task<Order> GetOrderAsync(Guid userId, Guid orderId, CancellationToken ct = default)
@@ -191,6 +199,7 @@ public class OrderService(
         return await dbContext.Orders
                    .Include(o => o.Items)
                    .ThenInclude(i => i.Product)
+                   .ThenInclude(p => p.Images.Where(img => img.IsPrimary))
                    .Include(o => o.Payment)
                    .FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId, ct)
                ?? throw new NotFoundException("Order not found.", "ORDER_NOT_FOUND");
@@ -240,6 +249,54 @@ public class OrderService(
 
         return order;
     }
+    
+public async Task<(string ClientSecret, string SessionId)> RetryPaymentAsync(
+    Guid userId, Guid orderId, CancellationToken ct = default)
+{
+    var order = await dbContext.Orders
+        .Include(o => o.Items)
+        .ThenInclude(i => i.Product)
+        .ThenInclude(p => p.Images.Where(img => img.IsPrimary))
+        .Include(o => o.Payment)
+        .FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId, ct)
+        ?? throw new NotFoundException("Order not found.", "ORDER_NOT_FOUND");
+
+    if (order.Status != OrderStatus.Placed)
+        throw new ValidationException("Order cannot be retried.", "INVALID_ORDER_STATE");
+
+    if (order.Payment?.PaymentMethod != "card")
+        throw new ValidationException("Only card payments can be retried.", "INVALID_PAYMENT_METHOD");
+
+    var lineItems = order.Items.Select(i => new CheckoutLineItem(
+        ProductName: i.Product!.Name,
+        PrimaryImageUrl: i.Product.Images.FirstOrDefault()?.ImageUrl,
+        UnitPrice: i.UnitPrice,
+        Quantity: i.Quantity)).ToList();
+
+    var user = await dbContext.Users.FindAsync([userId], ct)
+               ?? throw new NotFoundException("User not found.", "USER_NOT_FOUND");
+
+    var returnUrl = $"{configuration["Frontend:BaseUrl"]}/order-return?session_id={{CHECKOUT_SESSION_ID}}";
+
+    var (sessionId, clientSecret) = await stripeService.CreateCheckoutSessionAsync(
+        orderId: order.Id,
+        orderNumber: order.OrderNumber,
+        customerEmail: user.Email,
+        lineItems: lineItems,
+        returnUrl: returnUrl,
+        ct: ct);
+
+    order.Payment.UpdateProviderId(sessionId);
+    order.Payment.MarkPending();
+    
+    await dbContext.SaveChangesAsync(ct);
+
+    logger.LogInformation(
+        "Retry payment session created. OrderId={OrderId} SessionId={SessionId}",
+        order.Id, sessionId);
+
+    return (clientSecret, sessionId);
+}
 
     // ── Private Helpers ───────────────────────────────────────────────────────
 

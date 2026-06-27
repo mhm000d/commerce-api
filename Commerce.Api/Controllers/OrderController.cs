@@ -30,10 +30,10 @@ public class OrderController(IOrderService orderService) : ControllerBase
             return BadRequest(new
             {
                 error = $"'{request.PaymentMethod}' is not a valid payment method.",
-                code  = "INVALID_PAYMENT_METHOD",
+                code = "INVALID_PAYMENT_METHOD",
             });
         }
-        
+
         var (order, stripeClientSecret) = await orderService.CheckoutAsync(
             GetUserId(), request.AddressId, paymentMethod, ct);
 
@@ -41,17 +41,17 @@ public class OrderController(IOrderService orderService) : ControllerBase
 
         return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, response);
     }
-    
+
     [HttpGet(ApiEndpoints.Orders.GetCheckoutSessionStatus)]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSessionStatus(
+    public async Task<CheckoutSessionStatusResponse> GetSessionStatus(
         [FromQuery] string sessionId,
         CancellationToken ct)
     {
-        var status = await orderService.GetCheckoutSessionStatusAsync(sessionId, ct);
-        return Ok(status);
+        var (status, customerEmail, orderId) = await orderService.GetCheckoutSessionStatusAsync(sessionId, ct);
+        return new CheckoutSessionStatusResponse(status, customerEmail, orderId);
     }
-    
+
     [HttpGet(ApiEndpoints.Orders.GetOrder)]
     [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -60,13 +60,13 @@ public class OrderController(IOrderService orderService) : ControllerBase
         var order = await orderService.GetOrderAsync(GetUserId(), id, ct);
         return Ok(order.ToResponse());
     }
-    
+
     [HttpGet(ApiEndpoints.Orders.GetOrders)]
     [ProducesResponseType(typeof(PagedResponse<OrderResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetOrders(
-        [FromQuery] int page     = 1,
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
-        CancellationToken ct     = default)
+        CancellationToken ct = default)
     {
         pageSize = Math.Clamp(pageSize, 1, 100);
         var (orders, total) = await orderService.GetOrdersAsync(
@@ -74,7 +74,7 @@ public class OrderController(IOrderService orderService) : ControllerBase
 
         return Ok(orders.ToPagedResponse(page, pageSize, total));
     }
-    
+
     [HttpPost(ApiEndpoints.Orders.CancelOrder)]
     [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -83,7 +83,17 @@ public class OrderController(IOrderService orderService) : ControllerBase
         var order = await orderService.CancelOrderAsync(GetUserId(), id, ct);
         return Ok(order.ToResponse());
     }
-    
+
+    [HttpPost(ApiEndpoints.Orders.RetryPayment)]
+    [ProducesResponseType(typeof(CheckoutResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RetryPayment(Guid id, CancellationToken ct)
+    {
+        var (clientSecret, sessionId) = await orderService.RetryPaymentAsync(GetUserId(), id, ct);
+        return Ok(new { clientSecret, orderId = id });
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

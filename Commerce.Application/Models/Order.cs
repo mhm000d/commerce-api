@@ -56,7 +56,7 @@ public class Order
     {
         var canCancel = isAdmin
             ? Status != OrderStatus.Delivered
-            : Status is OrderStatus.Placed or OrderStatus.Paid;
+            : Status is OrderStatus.Placed;
 
         if (!canCancel)
             throw new InvalidOperationException(
@@ -72,6 +72,20 @@ public class Order
     }
 
     public void AddItem(OrderItem item) => Items.Add(item);
+    
+    /// <summary>
+    /// Admin override – allows setting any status except from Cancelled.
+    /// Intended for COD orders where the normal state machine is bypassed.
+    /// </summary>
+    public void AdminSetStatus(OrderStatus newStatus)
+    {
+        // Cannot change a cancelled order
+        if (Status == OrderStatus.Cancelled)
+            throw new InvalidOperationException("Cannot change status of a cancelled order.");
+
+        // Allow any forward transition (admin can set any status)
+        Status = newStatus;
+    }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     private void EnsureTransition(OrderStatus from, OrderStatus to)

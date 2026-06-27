@@ -22,4 +22,9 @@ public interface IOrderService
 
     Task<Order> CancelOrderAsync(
         Guid userId, Guid orderId, CancellationToken ct = default);
+
+    Task<(string ClientSecret, string SessionId)> RetryPaymentAsync(
+        Guid userId,
+        Guid orderId,
+        CancellationToken ct = default);
 }
