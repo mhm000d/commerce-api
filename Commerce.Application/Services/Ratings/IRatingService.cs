@@ -8,7 +8,6 @@ public interface IRatingService
         Guid productId, Guid userId, int score, string? comment,
         CancellationToken ct = default);
 
-    // userId added — service enforces ownership, not just the controller
     Task<Rating> UpdateRatingAsync(
         Guid ratingId, Guid userId, int score, string? comment,
         CancellationToken ct = default);
@@ -17,7 +16,10 @@ public interface IRatingService
         Guid ratingId, Guid userId,
         CancellationToken ct = default);
 
-    Task<IReadOnlyList<Rating>> GetRatingsAsync(
+    Task<(IReadOnlyList<Rating> Ratings, int TotalCount)> GetRatingsAsync(
         Guid productId,
+        int page,
+        int pageSize,
+        string? sortBy,
         CancellationToken ct = default);
 }

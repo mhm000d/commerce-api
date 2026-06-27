@@ -4,7 +4,6 @@ using Commerce.Application.Services.Ratings;
 using Commerce.Contracts.Ratings;
 using Commerce.Contracts.Common;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Commerce.Api.Controllers;
@@ -64,15 +63,31 @@ public class RatingsController(IRatingService ratingService) : ControllerBase
     }
     
     [HttpGet(ApiEndpoints.Ratings.GetRatings)]
-    [ProducesResponseType(typeof(List<RatingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResponse<RatingResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRatings(
         Guid productId,
-        CancellationToken ct)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 5,
+        [FromQuery] string? sortBy = "newest",
+        CancellationToken ct = default)
     {
-        var ratings = await ratingService.GetRatingsAsync(productId, ct);
+        var (ratings, totalCount) = await ratingService.GetRatingsAsync(
+            productId, page, pageSize, sortBy, ct);
 
-        var response = ratings.Select(r => r.ToResponse());
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        return Ok(response.ToList());
+        var response = new PagedResponse<RatingResponse>
+        (
+            Data: ratings.Select(r => r.ToResponse()).ToList(),
+            Pagination: new PaginationMeta(
+                Page: page,
+                PageSize: pageSize,
+                TotalItems: totalCount,
+                TotalPages: totalPages,
+                HasNext: page < totalPages,
+                HasPrevious: page > 1)
+        );
+
+        return Ok(response);
     }
 }

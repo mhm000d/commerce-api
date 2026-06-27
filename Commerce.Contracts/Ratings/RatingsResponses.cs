@@ -5,6 +5,7 @@ public record RatingResponse(
     int Score,
     string? Comment,
     DateTimeOffset CreatedAt,
-    string UserName
+    string UserName,
+    Guid UserId
 );
 

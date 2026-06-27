@@ -13,6 +13,7 @@ public static class RatingMappings
         Score:     rating.Score,
         Comment:   rating.Comment,
         CreatedAt: rating.CreatedAt,
-        UserName:  rating.User.Name
+        UserName:  rating.User.Name,
+        UserId:    rating.UserId
     );
 }

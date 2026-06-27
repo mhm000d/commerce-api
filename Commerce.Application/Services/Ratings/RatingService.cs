@@ -4,6 +4,7 @@ using Commerce.Application.Models;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ValidationException = Commerce.Application.Exceptions.ValidationException;
 
 namespace Commerce.Application.Services.Ratings;
 
@@ -18,6 +19,17 @@ public class RatingService(
         var product = await dbContext.Products
                           .FirstOrDefaultAsync(p => p.Id == productId && !p.IsDeleted, ct)
                       ?? throw new NotFoundException("Product not found.", "PRODUCT_NOT_FOUND");
+
+        var hasPurchased = await dbContext.Orders
+            .AnyAsync(o => o.UserId == userId
+                           && o.Status != OrderStatus.Cancelled
+                           && o.Status != OrderStatus.Placed
+                           && o.Items.Any(oi => oi.ProductId == productId), ct);
+        
+        if (!hasPurchased)
+            throw new ValidationException(
+                "You can only review products you have purchased.",
+                "NOT_PURCHASED");
 
         // Check if it's one rating per user per product
         var alreadyRated = await dbContext.Ratings
@@ -119,14 +131,33 @@ public class RatingService(
             ratingId, rating.ProductId, userId);
     }
 
-    public async Task<IReadOnlyList<Rating>> GetRatingsAsync(Guid productId, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<Rating> Ratings, int TotalCount)> GetRatingsAsync(
+        Guid productId,
+        int page,
+        int pageSize,
+        string? sortBy,
+        CancellationToken ct = default)
     {
-        return await dbContext.Ratings
+        var query = dbContext.Ratings
             .AsNoTracking()
             .Include(r => r.User)
-            .Where(r => r.ProductId == productId)
-            .OrderByDescending(r => r.CreatedAt)
+            .Where(r => r.ProductId == productId);
+
+        query = sortBy?.ToLower() switch
+        {
+            "highest" => query.OrderByDescending(r => r.Score).ThenByDescending(r => r.CreatedAt),
+            "lowest" => query.OrderBy(r => r.Score).ThenByDescending(r => r.CreatedAt),
+            _ => query.OrderByDescending(r => r.CreatedAt), // default: newest
+        };
+
+        var totalCount = await query.CountAsync(ct);
+
+        var ratings = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(ct);
+
+        return (ratings, totalCount);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
