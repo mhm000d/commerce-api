@@ -1,5 +1,6 @@
 using Commerce.Application.Database;
 using Commerce.Application.Models;
+using Commerce.Application.Services.Carts;
 using Commerce.Application.Services.Email;
 using Commerce.Application.Services.Payments;
 using Microsoft.AspNetCore.Http;
@@ -11,6 +12,7 @@ namespace Commerce.Api.Controllers;
 [ApiController]
 public class WebhookController(
     AppDbContext dbContext,
+    ICartService cartService,
     IStripeService stripeService,
     IEmailNotificationService emailService,
     ILogger<WebhookController> logger) : ControllerBase
@@ -25,7 +27,7 @@ public class WebhookController(
         var payload = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync(ct);
         var signature = Request.Headers["Stripe-Signature"].ToString();
 
-        // 1. Verify signature — reject anything that doesn't match the webhook secret.
+        // Verify signature — reject anything that doesn't match the webhook secret.
         if (!stripeService.TryParseWebhookEvent(payload, signature, out var stripeEvent)
             || stripeEvent is null)
         {
@@ -33,22 +35,22 @@ public class WebhookController(
             return BadRequest();
         }
 
-        // 2. Idempotency guard — Stripe may deliver the same event more than once.
+        // Idempotency guard — Stripe may deliver the same event more than once.
         var alreadyProcessed = await dbContext.WebhookEvents
             .AnyAsync(e => e.EventId == stripeEvent.Id, ct);
 
         if (alreadyProcessed)
             return Ok(); // acknowledge without reprocessing
 
-        // 3. Persist the raw event immediately so we have an audit trail even if
-        //    processing fails, and so a retry is caught by the guard above.
+        // Persist the raw event immediately so we have an audit trail even if
+        // processing fails, and so a retry is caught by the guard above.
         var webhookEvent = WebhookEvent.Create(stripeEvent.Id, stripeEvent.Type, payload);
         dbContext.WebhookEvents.Add(webhookEvent);
         await dbContext.SaveChangesAsync(ct);
 
-        // 4. Process — errors are caught so we always return 200 to Stripe.
-        //    Stripe stops retrying on 4xx/5xx, so the safe contract is: save the
-        //    raw event first (step 3), then process best-effort.
+        // Process — errors are caught so we always return 200 to Stripe.
+        // Stripe stops retrying on 4xx/5xx, so the safe contract is: save the
+        // raw event first (step 3), then process best-effort.
         try
         {
             await ProcessEventAsync(stripeEvent, ct);
@@ -102,25 +104,13 @@ public class WebhookController(
 
         payment.MarkCompleted();
         payment.Order.MarkAsPaid();
+        
+        var userId = payment.Order.UserId;
+        await cartService.ClearCartAsync(userId, ct);
 
         // Queue confirmation email — EmailSenderJob picks it up within 1 minute.
         var user = await dbContext.Users.FindAsync([payment.Order.UserId], ct)
                    ?? throw new InvalidOperationException("User not found for order.");
-
-        // var notification = EmailNotification.Create(
-        //     recipientEmail: user.Email,
-        //     template:       EmailTemplate.OrderConfirmation,
-        //     templateData: new Dictionary<string, string>
-        //     {
-        //         ["CustomerName"] = user.Name,
-        //         ["OrderNumber"] = payment.Order.OrderNumber,
-        //         ["OrderId"]      = payment.OrderId.ToString(),
-        //         ["TotalAmount"] = payment.Order.TotalAmount.ToString("F2"),
-        //         ["Items"]        = System.Text.Json.JsonSerializer.Serialize(lineItems)
-        //     },
-        //     orderId: payment.OrderId);
-        //
-        // dbContext.EmailNotifications.Add(notification);
 
         var lineItems = payment.Order.Items.Select(i => new OrderLineItemData(
             ProductName: i.Product!.Name,

@@ -9,11 +9,7 @@ public class StripeService(IConfiguration configuration) : IStripeService
     private readonly string _webhookSecret =
         configuration["Stripe:WebhookSecret"]
         ?? throw new InvalidOperationException("Stripe:WebhookSecret is not configured.");
-
-    private readonly string _frontendBaseUrl =
-        configuration["Frontend:BaseUrl"]
-        ?? throw new InvalidOperationException("Frontend:BaseUrl is not configured.");
-
+    
     public async Task<(string SessionId, string ClientSecret)> CreateCheckoutSessionAsync(Guid orderId,
         string orderNumber,
         string customerEmail,
@@ -23,7 +19,7 @@ public class StripeService(IConfiguration configuration) : IStripeService
     {
         var options = new SessionCreateOptions
         {
-            UiMode = "embedded",
+            UiMode = "embedded_page",
             Mode = "payment",
             ClientReferenceId = orderId.ToString(),
             CustomerEmail = customerEmail,

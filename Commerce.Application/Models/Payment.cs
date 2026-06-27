@@ -32,6 +32,7 @@ public class Payment
     }
     
     // ── Behaviour ─────────────────────────────────────────────────────────────
+    public void MarkPending()   => Status = PaymentStatus.Pending;
     public void MarkCompleted() => Status = PaymentStatus.Completed;
     public void MarkFailed()    => Status = PaymentStatus.Failed;
     public void MarkRefunded()  => Status = PaymentStatus.Refunded;
