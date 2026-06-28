@@ -5,6 +5,7 @@ using Amazon.S3;
 using Amazon.SimpleEmailV2;
 using Commerce.Application.Database;
 using Commerce.Application.Jobs;
+using Commerce.Application.Services.Account;
 using Commerce.Application.Services.Addresses;
 using Commerce.Application.Services.Admin;
 using Commerce.Application.Services.Auth;
@@ -29,6 +30,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Stripe;
+using AccountService = Commerce.Application.Services.Account.AccountService;
 using ProductService = Commerce.Application.Services.Products.ProductService;
 using TokenService = Commerce.Application.Services.Auth.TokenService;
 
@@ -42,6 +44,7 @@ public static class ApplicationServiceExtensions
         {
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<IAccountService, AccountService>();
             services.AddScoped<IProductImageService, ProductImageService>();
             services.AddScoped<IRatingService, RatingService>();
             services.AddScoped<IAddressService, AddressService>();
