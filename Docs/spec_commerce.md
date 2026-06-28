@@ -50,6 +50,8 @@ The project is structured to show production-oriented backend engineering: clear
 - Refresh token rotation with hashed token storage.
 - Token-family tracking and reuse detection. Replaying a rotated token revokes the whole token family.
 - Single-session logout and all-device logout.
+- Authenticated profile retrieval and profile updates.
+- Authenticated password change.
 - Forgot-password and reset-password flow backed by single-use reset tokens.
 - Password reset revokes active refresh tokens.
 
@@ -312,6 +314,14 @@ All endpoints are prefixed with `/api`.
 | `POST` | `/api/auth/forgot-password` | Queue password reset email |
 | `POST` | `/api/auth/reset-password` | Reset password with a valid reset token |
 
+### Account
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/account/profile` | Get the current user's profile |
+| `PUT` | `/api/account/profile` | Update the current user's profile |
+| `POST` | `/api/account/change-password` | Change the current user's password |
+
 ### Products
 
 | Method | Path | Description |
@@ -368,12 +378,14 @@ All endpoints are prefixed with `/api`.
 | `GET` | `/api/orders` | List current user's orders with pagination |
 | `GET` | `/api/orders/{id}` | Get current user's order details |
 | `POST` | `/api/orders/{id}/cancel` | Cancel current user's order when allowed |
+| `POST` | `/api/orders/{id}/retry-payment` | Retry payment for an order when allowed |
 
 ### Admin Orders
 
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/api/admin/orders` | List all orders with pagination, admin only |
+| `GET` | `/api/admin/orders/{id}` | Get order details, admin only |
 | `PUT` | `/api/admin/orders/{id}/status` | Move order through valid state transition, admin only |
 
 ### Webhooks
@@ -616,7 +628,6 @@ Commerce/
 - Evaluate an external identity provider such as Auth0 for hosted authentication, social login, and enterprise identity features.
 - Add structured request logging, correlation IDs, metrics, and tracing.
 - Add a distributed rate-limit store if the API is scaled across multiple instances.
-- Add LocalStack or MinIO for local S3-compatible image-upload testing.
 - Use AWS CloudFront in front of S3 for CDN-backed product image delivery.
 - Expand payment coverage for additional Stripe webhook events such as refunds and failed payment flows.
 - Add deployment configuration for a cloud environment, including AWS Secrets Manager and production-ready observability.
