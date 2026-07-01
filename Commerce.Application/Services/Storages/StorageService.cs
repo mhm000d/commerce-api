@@ -13,8 +13,11 @@ public class StorageService(
 {
     private readonly string _bucketName = config["FileUpload:S3:BucketName"]
                                           ?? throw new InvalidOperationException("S3 bucket name is not configured.");
+
     private readonly string _region = config["FileUpload:S3:Region"]
                                       ?? throw new InvalidOperationException("S3 region name is not configured.");
+
+    private readonly string? _cdnDomain = config["FileUpload:Cdn:Domain"];
 
     public async Task<string> UploadAsync(Stream fileStream, string fileName, string contentType)
     {
@@ -26,7 +29,7 @@ public class StorageService(
             Key = key,
             InputStream = fileStream,
             ContentType = contentType,
-            // Public access is granted via the bucket policy.
+            // Bucket is private — CloudFront reaches it via Origin Access Control.
             Metadata =
             {
                 ["x-amz-meta-original-Name"] = fileName,
@@ -40,7 +43,7 @@ public class StorageService(
             await s3Client.PutObjectAsync(request);
             logger.LogInformation("File uploaded to S3: {Key}", key);
 
-            // Return the permanent public URL, and store it in the database for later access.
+            // Return the CDN URL, and store it in the database for later access.
             return BuildPublicUrl(key);
         }
         catch (AmazonS3Exception ex)
@@ -60,7 +63,7 @@ public class StorageService(
             BucketName = _bucketName,
             Key = key
         };
-        
+
         try
         {
             await s3Client.DeleteObjectAsync(request);
@@ -90,11 +93,14 @@ public class StorageService(
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
     private string BuildPublicUrl(string key)
-        => $"https://{_bucketName}.s3.{_region}.amazonaws.com/{key}";
+        => string.IsNullOrWhiteSpace(_cdnDomain)
+            ? $"https://{_bucketName}.s3.{_region}.amazonaws.com/{key}"
+            : $"https://{_cdnDomain}/{key}";
 
     private string ExtractKeyFromUrl(string fileUrl)
     {
-        // e.g. https://bucket.s3.region.amazonaws.com/products/file.jpg → products/file.jpg
+        // Works for both hosts — only the object key (path) matters, not the domain.
+        // e.g. https://d2pbugge3n29nf.cloudfront.net/products/file.jpg → products/file.jpg
         var uri = new Uri(fileUrl);
         return uri.AbsolutePath.TrimStart('/');
     }
