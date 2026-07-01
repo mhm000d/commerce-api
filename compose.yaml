@@ -1,8 +1,6 @@
 services:
   api:
-    build:
-      context: .
-      dockerfile: Commerce.Api/Dockerfile
+    image: 125192672087.dkr.ecr.eu-north-1.amazonaws.com/commerce-api:v1
     container_name: commerce-api
     profiles:
       - api
