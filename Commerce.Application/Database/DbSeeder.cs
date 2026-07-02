@@ -10,15 +10,12 @@ public static class DbSeeder
     private const string DevelopmentAdminEmail = "admin@commerce.local";
     private const string DevelopmentAdminPassword = "Admin123!";
 
-    // =============================================================================
-    // Existing product IDs (kept unchanged)
-    // =============================================================================
+    // Product IDs
     private static readonly Guid DellXps13Id = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid GalaxyS24Id = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid PlayStation5Id = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid LgOledTvId = Guid.Parse("44444444-4444-4444-4444-444444444444");
     private static readonly Guid MxKeysComboId = Guid.Parse("55555555-5555-5555-5555-555555555555");
-    // New product IDs for previously added products (from earlier expansion)
     private static readonly Guid MacBookAirM2Id = Guid.Parse("66666666-6666-6666-6666-666666666666");
     private static readonly Guid IPhone15ProId = Guid.Parse("77777777-7777-7777-7777-777777777777");
     private static readonly Guid Pixel8aId = Guid.Parse("88888888-8888-8888-8888-888888888888");
@@ -28,9 +25,8 @@ public static class DbSeeder
     private static readonly Guid LGMicrowaveId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static readonly Guid RoombaJ7Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
-    // =============================================================================
     // Additional product IDs (grouped by category)
-    // =============================================================================
+    
     // Mobiles (9 more needed to reach 11: already have iPhone15Pro, Pixel8a)
     private static readonly Guid GalaxyS24UltraId = Guid.Parse("e0000001-0001-0001-0001-000000000001");
     private static readonly Guid OnePlus12Id = Guid.Parse("e0000002-0002-0002-0002-000000000002");
