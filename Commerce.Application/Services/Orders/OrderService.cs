@@ -27,7 +27,7 @@ public class OrderService(
         var cart = await dbContext.Carts
                        .Include(c => c.Items)
                        .ThenInclude(i => i.Product)
-                       .ThenInclude(p => p.Images.Where(img => img.IsPrimary))
+                       .ThenInclude(p => p.Images)
                        .IgnoreQueryFilters()           // ← see deleted products so we can give a proper error
                        .Where(c => c.UserId == userId) // ← re-apply the UserId filter manually since IgnoreQueryFilters drops everything
                        .FirstOrDefaultAsync(c => c.UserId == userId, ct)
@@ -63,7 +63,8 @@ public class OrderService(
 
         var lineItemSnapshots = cart.Items.Select(i => new CheckoutLineItem(
             ProductName: i.Product.Name,
-            PrimaryImageUrl: i.Product.Images.FirstOrDefault()?.ImageUrl,
+            PrimaryImageUrl: i.Product.Images.FirstOrDefault(img => img.IsPrimary)?.ImageUrl
+                             ?? i.Product.Images.FirstOrDefault()?.ImageUrl,
             UnitPrice: i.Product.Price,
             Quantity: i.Quantity)).ToList();
 
@@ -357,8 +358,6 @@ public async Task<(string ClientSecret, string SessionId)> RetryPaymentAsync(
             if (!dbContext.Entry(item.Product).Collection(p => p.Images).IsLoaded)
                 await dbContext.Entry(item.Product)
                     .Collection(p => p.Images)
-                    .Query()
-                    .Where(img => img.IsPrimary)
                     .LoadAsync(ct);
         }
 

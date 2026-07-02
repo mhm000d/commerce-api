@@ -114,7 +114,8 @@ public class WebhookController(
 
         var lineItems = payment.Order.Items.Select(i => new OrderLineItemData(
             ProductName: i.Product!.Name,
-            ImageUrl:    i.Product.Images.FirstOrDefault(/*img => img.IsPrimary*/)?.ImageUrl,
+            ImageUrl:    i.Product.Images.FirstOrDefault(img => img.IsPrimary)?.ImageUrl
+                         ?? i.Product.Images.FirstOrDefault()?.ImageUrl,
             UnitPrice:   i.UnitPrice,
             Quantity:    i.Quantity));
 
@@ -165,7 +166,7 @@ public class WebhookController(
                    .Include(p => p.Order)
                    .ThenInclude(o => o.Items)
                    .ThenInclude(i => i.Product)
-                   .ThenInclude(p => p.Images.Where(img => img.IsPrimary))
+                   .ThenInclude(p => p.Images)
                    .FirstOrDefaultAsync(p => p.OrderId == orderId, ct)
                ?? throw new InvalidOperationException(
                    $"No payment found for OrderId '{orderId}'.");
