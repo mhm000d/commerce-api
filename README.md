@@ -89,6 +89,25 @@ dotnet test Commerce.Tests/Commerce.Tests.csproj --filter FullyQualifiedName~Uni
 
 ---
 
+## 🚀 Deployment
+
+The API is deployed on **AWS EC2** using **Docker Compose**, with images stored in **Amazon ECR**.
+A **GitHub Actions** workflow automatically builds, pushes, and deploys the API on every `git push` to `main`.
+
+### Production Architecture
+
+* **EC2 (t3.micro)**: Hosts the API container and Nginx reverse proxy
+* **RDS (db.t4g.micro)**: PostgreSQL database
+* **S3 + CloudFront**: Product image storage and CDN delivery
+* **SES**: Transactional email delivery (order confirmations, password reset) _!NOTE_: Work on verified emails for now.
+* **Vercel**: Frontend hosting (Next.js)
+
+### CI/CD Pipeline
+
+* `git push` → GitHub Actions builds Docker image → pushes to ECR → SSH into EC2 → pulls new image → restarts container
+
+---
+
 ## 📁 Project Structure
 
 * `Commerce.Api` - HTTP Controllers, middleware, rate-limiting, Swagger

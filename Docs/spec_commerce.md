@@ -587,6 +587,23 @@ GitHub Actions workflows are defined under `.github/workflows`:
 Dependabot is configured in `.github/dependabot.yml` for weekly updates to NuGet packages, GitHub Actions, Dockerfile images, and Docker Compose images.
 Patch and minor dependency updates are ignored to keep routine automation focused on larger version changes.
 
+## Deployment
+
+The API is deployed on **AWS EC2** using **Docker Compose**, with images stored in **Amazon ECR**.
+A **GitHub Actions** workflow automatically builds, pushes, and deploys the API on every `git push` to `main`.
+
+### Production Architecture
+
+- **EC2 (t3.micro)**: Hosts the API container and Nginx reverse proxy
+- **RDS (db.t4g.micro)**: PostgreSQL database (private subnet)
+- **S3 + CloudFront**: Product image storage and CDN delivery
+- **SES**: Transactional email delivery (order confirmations, password reset)
+- **Vercel**: Frontend hosting (Next.js)
+
+### CI/CD Pipeline
+
+- `git push` → GitHub Actions builds Docker image → pushes to ECR → SSH into EC2 → pulls new image → restarts container
+
 ## Project Structure
 
 ```text
