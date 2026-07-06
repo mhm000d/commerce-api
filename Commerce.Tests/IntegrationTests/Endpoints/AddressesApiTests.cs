@@ -170,7 +170,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         var all = await listResponse.Content.ReadFromJsonAsync<List<AddressResponse>>();
 
         all!.Count(a => a.IsDefault).ShouldBe(1);
-        all.Single(a => a.IsDefault).Id.ShouldBe(second.Id);
+        all!.Single(a => a.IsDefault).Id.ShouldBe(second.Id);
     }
 
     // ── PUT /api/addresses/{id} ───────────────────────────────────────────────

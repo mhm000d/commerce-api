@@ -1,18 +1,11 @@
 services:
   api:
-    build:
-      context: .
-      dockerfile: Commerce.Api/Dockerfile
+    image: ${ECR_BASE}/commerce-api:${IMAGE_TAG:-latest}
     container_name: commerce-api
     profiles:
       - api
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mailpit:
-        condition: service_started
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-commerceDb};Username=${POSTGRES_USER:-commerce_user};Password=${POSTGRES_PASSWORD:-commerce_password}
       Jwt__Key: ${JWT_KEY:-CommerceDevelopmentSigningKey-ChangeMe-ForLocalOnly-1234567890}
@@ -31,20 +24,13 @@ services:
       Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
       Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY:-}
       Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET:-}
-      Smtp__Host: mailpit
-      Smtp__Port: 1025
-      Smtp__Username: ${SMTP_USERNAME:-test}
-      Smtp__Password: ${SMTP_PASSWORD:-test}
-      Smtp__UseSsl: false
       Email__FromAddress: ${EMAIL_FROM_ADDRESS:-noreply@commerce.local}
       Email__FromName: ${EMAIL_FROM_NAME:-Commerce Store}
       Email__FrontendBaseUrl: ${FRONTEND_BASE_URL:-http://localhost:3000}
       AWS__Region: ${AWS_REGION:-eu-west-1}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
       FileUpload__S3__BucketName: ${S3_BUCKET_NAME:-commerce-product-images-local}
-      FileUpload__S3__Region: ${AWS_REGION:-eu-west-1}
+      FileUpload__Cdn__Domain: ${CDN_DOMAIN:-}
+      FileUpload__S3__Region: ${AWS_REGION:-eu-north-1}
     ports:
       - "5082:8080"
     restart: unless-stopped

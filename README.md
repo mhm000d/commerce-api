@@ -61,7 +61,7 @@ The fastest way to run the API, PostgreSQL, and Mailpit together:
 cp .env.example .env
 
 # Start all services
-docker compose -f compose.development.yaml --profile api up --build
+docker compose -f compose.yaml --profile api up --build
 ```
 
 * **API & Swagger**: [http://localhost:5082/swagger](http://localhost:5082/swagger)
