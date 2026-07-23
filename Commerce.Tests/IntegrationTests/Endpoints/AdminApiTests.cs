@@ -40,7 +40,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
         db.Users.Add(admin);
         await db.SaveChangesAsync();
 
-        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login",
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login",
             new LoginRequest("admin@example.com", "Password1"));
         loginResponse.EnsureSuccessStatusCode();
 
@@ -52,9 +52,9 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
     private async Task AuthorizeAsCustomerAsync(
         string email = "cust@example.com", string name = "Customer")
     {
-        await _client.PostAsJsonAsync("/api/auth/register",
+        await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest(name, email, "Password1", null));
-        var login = await _client.PostAsJsonAsync("/api/auth/login",
+        var login = await _client.PostAsJsonAsync("/api/v1/auth/login",
             new LoginRequest(email, "Password1"));
         login.EnsureSuccessStatusCode();
 
@@ -133,9 +133,9 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
     // ── Product admin authorization ───────────────────────────────────────────
 
     [Theory]
-    [InlineData("POST", "/api/admin/products")]
-    [InlineData("PUT", "/api/admin/products/00000000-0000-0000-0000-000000000001")]
-    [InlineData("DELETE", "/api/admin/products/00000000-0000-0000-0000-000000000001")]
+    [InlineData("POST", "/api/v1/admin/products")]
+    [InlineData("PUT", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001")]
+    [InlineData("DELETE", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001")]
     public async Task ProductAdminEndpoints_WhenUnauthenticated_Return401(
         string method,
         string path)
@@ -148,9 +148,9 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("POST", "/api/admin/products")]
-    [InlineData("PUT", "/api/admin/products/00000000-0000-0000-0000-000000000001")]
-    [InlineData("DELETE", "/api/admin/products/00000000-0000-0000-0000-000000000001")]
+    [InlineData("POST", "/api/v1/admin/products")]
+    [InlineData("PUT", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001")]
+    [InlineData("DELETE", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001")]
     public async Task ProductAdminEndpoints_WhenCustomer_Return403(
         string method,
         string path)
@@ -166,9 +166,9 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
     // ── Product image admin authorization ─────────────────────────────────────
 
     [Theory]
-    [InlineData("POST", "/api/admin/products/00000000-0000-0000-0000-000000000001/images")]
-    [InlineData("DELETE", "/api/admin/products/00000000-0000-0000-0000-000000000001/images/00000000-0000-0000-0000-000000000002")]
-    [InlineData("PUT", "/api/admin/products/00000000-0000-0000-0000-000000000001/images/00000000-0000-0000-0000-000000000002/set-primary")]
+    [InlineData("POST", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001/images")]
+    [InlineData("DELETE", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001/images/00000000-0000-0000-0000-000000000002")]
+    [InlineData("PUT", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001/images/00000000-0000-0000-0000-000000000002/set-primary")]
     public async Task ProductImageAdminEndpoints_WhenUnauthenticated_Return401(
         string method,
         string path)
@@ -181,9 +181,9 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("POST", "/api/admin/products/00000000-0000-0000-0000-000000000001/images")]
-    [InlineData("DELETE", "/api/admin/products/00000000-0000-0000-0000-000000000001/images/00000000-0000-0000-0000-000000000002")]
-    [InlineData("PUT", "/api/admin/products/00000000-0000-0000-0000-000000000001/images/00000000-0000-0000-0000-000000000002/set-primary")]
+    [InlineData("POST", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001/images")]
+    [InlineData("DELETE", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001/images/00000000-0000-0000-0000-000000000002")]
+    [InlineData("PUT", "/api/v1/admin/products/00000000-0000-0000-0000-000000000001/images/00000000-0000-0000-0000-000000000002/set-primary")]
     public async Task ProductImageAdminEndpoints_WhenCustomer_Return403(
         string method,
         string path)
@@ -205,7 +205,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
         await SeedOrderAsync();
         await SeedOrderAsync();
 
-        var response = await _client.GetAsync("/api/admin/orders");
+        var response = await _client.GetAsync("/api/v1/admin/orders");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -219,7 +219,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
     {
         await AuthorizeAsCustomerAsync();
 
-        var response = await _client.GetAsync("/api/admin/orders");
+        var response = await _client.GetAsync("/api/v1/admin/orders");
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -227,7 +227,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
     [Fact]
     public async Task GetAdminOrders_WhenUnauthenticated_Returns401()
     {
-        var response = await _client.GetAsync("/api/admin/orders");
+        var response = await _client.GetAsync("/api/v1/admin/orders");
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -240,7 +240,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
         var order = await SeedOrderAsync(OrderStatus.Placed);
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/admin/orders/{order.Id}/status",
+            $"/api/v1/admin/orders/{order.Id}/status",
             new UpdateOrderStatusRequest("Paid"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -256,7 +256,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
         var order = await SeedOrderAsync();
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/admin/orders/{order.Id}/status",
+            $"/api/v1/admin/orders/{order.Id}/status",
             new UpdateOrderStatusRequest("FlyingPigs"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -270,7 +270,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
         var order = await SeedOrderAsync(OrderStatus.Placed);
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/admin/orders/{order.Id}/status",
+            $"/api/v1/admin/orders/{order.Id}/status",
             new UpdateOrderStatusRequest("Delivered"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -280,7 +280,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
     public async Task UpdateStatus_WhenUnauthenticated_Returns401()
     {
         var response = await _client.PutAsJsonAsync(
-            $"/api/admin/orders/{Guid.NewGuid()}/status",
+            $"/api/v1/admin/orders/{Guid.NewGuid()}/status",
             new UpdateOrderStatusRequest("Paid"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -292,7 +292,7 @@ public sealed class AdminApiTests(ApiFactory factory) : IAsyncLifetime
         await AuthorizeAsCustomerAsync();
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/admin/orders/{Guid.NewGuid()}/status",
+            $"/api/v1/admin/orders/{Guid.NewGuid()}/status",
             new UpdateOrderStatusRequest("Paid"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);

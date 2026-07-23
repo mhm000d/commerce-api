@@ -33,7 +33,7 @@ public sealed class AccountApiTests(ApiFactory factory)
         string name = "Test User",
         string password = "Password1")
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register",
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest(name, email, password, Phone: null));
 
         response.EnsureSuccessStatusCode();
@@ -53,7 +53,7 @@ public sealed class AccountApiTests(ApiFactory factory)
     {
         await RegisterAndAuthorizeAsync("john@example.com", "John Doe");
 
-        var response = await _client.GetAsync("/api/account/profile");
+        var response = await _client.GetAsync("/api/v1/account/profile");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -70,7 +70,7 @@ public sealed class AccountApiTests(ApiFactory factory)
     [Fact]
     public async Task GetProfile_WhenUnauthenticated_Returns401()
     {
-        var response = await _client.GetAsync("/api/account/profile");
+        var response = await _client.GetAsync("/api/v1/account/profile");
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -86,7 +86,7 @@ public sealed class AccountApiTests(ApiFactory factory)
             Phone: "+20123456789"
         );
 
-        var response = await _client.PutAsJsonAsync("/api/account/profile", request);
+        var response = await _client.PutAsJsonAsync("/api/v1/account/profile", request);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -102,7 +102,7 @@ public sealed class AccountApiTests(ApiFactory factory)
     {
         var request = new UpdateProfileRequest("New Name", null);
 
-        var response = await _client.PutAsJsonAsync("/api/account/profile", request);
+        var response = await _client.PutAsJsonAsync("/api/v1/account/profile", request);
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -113,7 +113,7 @@ public sealed class AccountApiTests(ApiFactory factory)
 
         var request = new UpdateProfileRequest("", "+20123456789");
 
-        var response = await _client.PutAsJsonAsync("/api/account/profile", request);
+        var response = await _client.PutAsJsonAsync("/api/v1/account/profile", request);
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
@@ -125,7 +125,7 @@ public sealed class AccountApiTests(ApiFactory factory)
         var longName = new string('a', 201);
         var request = new UpdateProfileRequest(longName, null);
 
-        var response = await _client.PutAsJsonAsync("/api/account/profile", request);
+        var response = await _client.PutAsJsonAsync("/api/v1/account/profile", request);
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
@@ -137,7 +137,7 @@ public sealed class AccountApiTests(ApiFactory factory)
         var longPhone = new string('1', 31);
         var request = new UpdateProfileRequest("Valid Name", longPhone);
 
-        var response = await _client.PutAsJsonAsync("/api/account/profile", request);
+        var response = await _client.PutAsJsonAsync("/api/v1/account/profile", request);
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
@@ -153,13 +153,13 @@ public sealed class AccountApiTests(ApiFactory factory)
             NewPassword: "NewPassword123"
         );
 
-        var response = await _client.PostAsJsonAsync("/api/account/change-password", request);
+        var response = await _client.PostAsJsonAsync("/api/v1/account/change-password", request);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Verify we can log in with the new password
         _client.DefaultRequestHeaders.Authorization = null;
-        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login",
+        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login",
             new LoginRequest("user@example.com", "NewPassword123"));
         loginResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -169,7 +169,7 @@ public sealed class AccountApiTests(ApiFactory factory)
     {
         var request = new ChangePasswordRequest("Old", "New");
 
-        var response = await _client.PostAsJsonAsync("/api/account/change-password", request);
+        var response = await _client.PostAsJsonAsync("/api/v1/account/change-password", request);
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -183,7 +183,7 @@ public sealed class AccountApiTests(ApiFactory factory)
             NewPassword: "NewPassword123"
         );
 
-        var response = await _client.PostAsJsonAsync("/api/account/change-password", request);
+        var response = await _client.PostAsJsonAsync("/api/v1/account/change-password", request);
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -197,7 +197,7 @@ public sealed class AccountApiTests(ApiFactory factory)
             NewPassword: "short"
         );
 
-        var response = await _client.PostAsJsonAsync("/api/account/change-password", request);
+        var response = await _client.PostAsJsonAsync("/api/v1/account/change-password", request);
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
@@ -211,7 +211,7 @@ public sealed class AccountApiTests(ApiFactory factory)
             NewPassword: "12345678"
         );
 
-        var response = await _client.PostAsJsonAsync("/api/account/change-password", request);
+        var response = await _client.PostAsJsonAsync("/api/v1/account/change-password", request);
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
@@ -225,7 +225,7 @@ public sealed class AccountApiTests(ApiFactory factory)
             NewPassword: "ABCDEFGH"
         );
 
-        var response = await _client.PostAsJsonAsync("/api/account/change-password", request);
+        var response = await _client.PostAsJsonAsync("/api/v1/account/change-password", request);
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
@@ -237,7 +237,7 @@ public sealed class AccountApiTests(ApiFactory factory)
         var newPassword = "NewPassword123";
 
         // Register the user
-        var regResponse = await _client.PostAsJsonAsync("/api/auth/register",
+        var regResponse = await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest("User", email, password, null));
         regResponse.EnsureSuccessStatusCode();
         var regBody = await regResponse.Content.ReadFromJsonAsync<AuthResponse>();
@@ -248,12 +248,12 @@ public sealed class AccountApiTests(ApiFactory factory)
 
         // Change password
         var changeRequest = new ChangePasswordRequest(password, newPassword);
-        var changeResponse = await _client.PostAsJsonAsync("/api/account/change-password", changeRequest);
+        var changeResponse = await _client.PostAsJsonAsync("/api/v1/account/change-password", changeRequest);
         changeResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Try to refresh with the old refresh token – should fail (401)
         _client.DefaultRequestHeaders.Authorization = null;
         var refreshPayload = new { refreshToken = regBody.RefreshToken };
-        var refreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", refreshPayload);
+        var refreshResponse = await _client.PostAsJsonAsync("/api/v1/auth/refresh", refreshPayload);
         refreshResponse.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }}

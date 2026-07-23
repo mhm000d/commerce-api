@@ -32,7 +32,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         string email = "user@example.com",
         string name = "Test User")
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register",
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest(name, email, "Password1", Phone: null));
 
         response.EnsureSuccessStatusCode();
@@ -63,7 +63,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
     // Creates an address through the API and returns the parsed response body.
     private async Task<AddressResponse> CreateAddressAsync(bool isDefault = false)
     {
-        var response = await _client.PostAsJsonAsync("/api/addresses", ValidRequest(isDefault));
+        var response = await _client.PostAsJsonAsync("/api/v1/addresses", ValidRequest(isDefault));
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await response.Content.ReadFromJsonAsync<AddressResponse>())!;
     }
@@ -78,7 +78,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
 
         await CreateAddressAsync();
 
-        var response = await _client.GetAsync("/api/addresses");
+        var response = await _client.GetAsync("/api/v1/addresses");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -90,7 +90,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
     [Fact]
     public async Task Get_WhenUnauthenticated_Returns401()
     {
-        var response = await _client.GetAsync("/api/addresses");
+        var response = await _client.GetAsync("/api/v1/addresses");
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -107,7 +107,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         await CreateAddressAsync();
 
         // Fetch user B's list — should only see B's one address.
-        var response = await _client.GetAsync("/api/addresses");
+        var response = await _client.GetAsync("/api/v1/addresses");
         var body = await response.Content.ReadFromJsonAsync<List<AddressResponse>>();
 
         body!.Count.ShouldBe(1);
@@ -123,7 +123,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         Authorize(token);
 
         var response = await _client.PostAsJsonAsync(
-            "/api/addresses", ValidRequest(fullName: "Jane Doe"));
+            "/api/v1/addresses", ValidRequest(fullName: "Jane Doe"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
 
@@ -136,7 +136,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
     [Fact]
     public async Task Post_WhenUnauthenticated_Returns401()
     {
-        var response = await _client.PostAsJsonAsync("/api/addresses", ValidRequest());
+        var response = await _client.PostAsJsonAsync("/api/v1/addresses", ValidRequest());
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -148,7 +148,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
 
         // Empty FullName should fail FluentValidation.
         var bad = ValidRequest() with { FullName = "" };
-        var response = await _client.PostAsJsonAsync("/api/addresses", bad);
+        var response = await _client.PostAsJsonAsync("/api/v1/addresses", bad);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -166,7 +166,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         second.IsDefault.ShouldBeTrue(); // new one is also true in its response
 
         // Fetch the list to see the final DB state.
-        var listResponse = await _client.GetAsync("/api/addresses");
+        var listResponse = await _client.GetAsync("/api/v1/addresses");
         var all = await listResponse.Content.ReadFromJsonAsync<List<AddressResponse>>();
 
         all!.Count(a => a.IsDefault).ShouldBe(1);
@@ -185,7 +185,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         // Ensure we keep the address as default (the only one)
         var updated = ValidRequest(fullName: "Updated Name") with { IsDefault = true };
         var response = await _client.PutAsJsonAsync(
-            $"/api/addresses/{address.Id}", updated);
+            $"/api/v1/addresses/{address.Id}", updated);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -203,7 +203,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         _client.DefaultRequestHeaders.Authorization = null;
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/addresses/{address.Id}", ValidRequest());
+            $"/api/v1/addresses/{address.Id}", ValidRequest());
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -220,7 +220,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         Authorize(intruderToken);
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/addresses/{address.Id}", ValidRequest());
+            $"/api/v1/addresses/{address.Id}", ValidRequest());
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -232,7 +232,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         Authorize(token);
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/addresses/{Guid.NewGuid()}", ValidRequest());
+            $"/api/v1/addresses/{Guid.NewGuid()}", ValidRequest());
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -246,7 +246,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
 
         var bad = ValidRequest() with { PhoneNumber = "abc" }; // fails regex
         var response = await _client.PutAsJsonAsync(
-            $"/api/addresses/{address.Id}", bad);
+            $"/api/v1/addresses/{address.Id}", bad);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -260,7 +260,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         Authorize(token);
         var address = await CreateAddressAsync();
 
-        var response = await _client.DeleteAsync($"/api/addresses/{address.Id}");
+        var response = await _client.DeleteAsync($"/api/v1/addresses/{address.Id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -274,7 +274,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
 
         _client.DefaultRequestHeaders.Authorization = null;
 
-        var response = await _client.DeleteAsync($"/api/addresses/{address.Id}");
+        var response = await _client.DeleteAsync($"/api/v1/addresses/{address.Id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -289,7 +289,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         var (intruderToken, _) = await RegisterAsync("intruder@example.com", "Intruder");
         Authorize(intruderToken);
 
-        var response = await _client.DeleteAsync($"/api/addresses/{address.Id}");
+        var response = await _client.DeleteAsync($"/api/v1/addresses/{address.Id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -300,7 +300,7 @@ public sealed class AddressesApiTests(ApiFactory factory)
         var (token, _) = await RegisterAsync();
         Authorize(token);
 
-        var response = await _client.DeleteAsync($"/api/addresses/{Guid.NewGuid()}");
+        var response = await _client.DeleteAsync($"/api/v1/addresses/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -316,9 +316,9 @@ public sealed class AddressesApiTests(ApiFactory factory)
         var defaultOne = await CreateAddressAsync(); // auto-default
         var other = await CreateAddressAsync(isDefault: false);
 
-        await _client.DeleteAsync($"/api/addresses/{defaultOne.Id}");
+        await _client.DeleteAsync($"/api/v1/addresses/{defaultOne.Id}");
 
-        var listResponse = await _client.GetAsync("/api/addresses");
+        var listResponse = await _client.GetAsync("/api/v1/addresses");
         var all = await listResponse.Content.ReadFromJsonAsync<List<AddressResponse>>();
 
         all!.Count.ShouldBe(1);

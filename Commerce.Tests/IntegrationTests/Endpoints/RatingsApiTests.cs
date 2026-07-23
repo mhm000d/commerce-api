@@ -32,7 +32,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
     private async Task<(string accessToken, Guid userId)> RegisterAsync(
         string email = "user@example.com", string name = "Test User")
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register",
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest(name, email, "Password1", Phone: null));
 
         response.EnsureSuccessStatusCode();
@@ -103,7 +103,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         Guid productId, int score = 5, string? comment = "Great!")
     {
         var response = await _client.PostAsJsonAsync(
-            $"/api/products/{productId}/ratings",
+            $"/api/v1/products/{productId}/ratings",
             new RatingRequest(score, comment));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -122,7 +122,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         await SeedOrderForUserAsync(userId, product.Id);
 
         var response = await _client.PostAsJsonAsync(
-            $"/api/products/{product.Id}/ratings",
+            $"/api/v1/products/{product.Id}/ratings",
             new RatingRequest(Score: 4, Comment: "Very good."));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -140,7 +140,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         var product = await SeedProductAsync();
 
         var response = await _client.PostAsJsonAsync(
-            $"/api/products/{product.Id}/ratings",
+            $"/api/v1/products/{product.Id}/ratings",
             new RatingRequest(Score: 4, Comment: null));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -155,7 +155,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         await SeedOrderForUserAsync(userId, product.Id);
 
         var response = await _client.PostAsJsonAsync(
-            $"/api/products/{product.Id}/ratings",
+            $"/api/v1/products/{product.Id}/ratings",
             new RatingRequest(Score: 99, Comment: null)); // invalid
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -172,7 +172,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         await CreateRatingAsync(product.Id);
 
         var response = await _client.PostAsJsonAsync(
-            $"/api/products/{product.Id}/ratings",
+            $"/api/v1/products/{product.Id}/ratings",
             new RatingRequest(Score: 3, Comment: null));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -190,7 +190,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         var rating = await CreateRatingAsync(product.Id, score: 5, comment: "Loved it");
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/ratings/{rating.Id}",
+            $"/api/v1/ratings/{rating.Id}",
             new RatingRequest(Score: 2, Comment: "Changed my mind"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -212,7 +212,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         _client.DefaultRequestHeaders.Authorization = null;
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/ratings/{rating.Id}",
+            $"/api/v1/ratings/{rating.Id}",
             new RatingRequest(Score: 1, Comment: null));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -231,7 +231,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         Authorize(intruderToken);
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/ratings/{rating.Id}",
+            $"/api/v1/ratings/{rating.Id}",
             new RatingRequest(Score: 1, Comment: "Sabotage"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
@@ -247,7 +247,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         var rating = await CreateRatingAsync(product.Id, score: 5);
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/ratings/{rating.Id}",
+            $"/api/v1/ratings/{rating.Id}",
             new RatingRequest(Score: 0, Comment: null)); // invalid
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -264,7 +264,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         await SeedOrderForUserAsync(userId, product.Id);
         var rating = await CreateRatingAsync(product.Id);
 
-        var response = await _client.DeleteAsync($"/api/ratings/{rating.Id}");
+        var response = await _client.DeleteAsync($"/api/v1/ratings/{rating.Id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -280,7 +280,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
 
         _client.DefaultRequestHeaders.Authorization = null;
 
-        var response = await _client.DeleteAsync($"/api/ratings/{rating.Id}");
+        var response = await _client.DeleteAsync($"/api/v1/ratings/{rating.Id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -297,7 +297,7 @@ public sealed class RatingsApiTests(ApiFactory factory)
         var (intruderToken, _) = await RegisterAsync("intruder@example.com", "Intruder");
         Authorize(intruderToken);
 
-        var response = await _client.DeleteAsync($"/api/ratings/{rating.Id}");
+        var response = await _client.DeleteAsync($"/api/v1/ratings/{rating.Id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }

@@ -60,7 +60,7 @@ public sealed class ProductsApiTests(ApiFactory factory) : IAsyncLifetime
         await SeedProductAsync("Laptop Two", "Second laptop", 1500m, Category.Laptops);
         await SeedProductAsync("Console", "Gaming console", 500m, Category.Games);
 
-        var response = await _client.GetAsync("/api/products?page=1&pageSize=2");
+        var response = await _client.GetAsync("/api/v1/products?page=1&pageSize=2");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -83,7 +83,7 @@ public sealed class ProductsApiTests(ApiFactory factory) : IAsyncLifetime
         await SeedProductAsync("Gaming Console", "Living room gaming", 500m, Category.Games);
 
         var response = await _client.GetAsync(
-            "/api/products?category=Laptops&sortBy=price_desc");
+            "/api/v1/products?category=Laptops&sortBy=price_desc");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -96,7 +96,7 @@ public sealed class ProductsApiTests(ApiFactory factory) : IAsyncLifetime
     [Fact]
     public async Task GetProducts_WithInvalidCategory_Returns400()
     {
-        var response = await _client.GetAsync("/api/products?category=Invalid");
+        var response = await _client.GetAsync("/api/v1/products?category=Invalid");
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -104,7 +104,7 @@ public sealed class ProductsApiTests(ApiFactory factory) : IAsyncLifetime
     [Fact]
     public async Task GetProducts_WithInvalidSort_Returns400()
     {
-        var response = await _client.GetAsync("/api/products?sortBy=unknown");
+        var response = await _client.GetAsync("/api/v1/products?sortBy=unknown");
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }

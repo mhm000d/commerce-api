@@ -48,7 +48,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
     private async Task<string> RegisterAndAuthorizeAsync(
         string email = "user@example.com", string role = "Customer")
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register",
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest("Test User", email, "Password1", Phone: null));
 
         response.EnsureSuccessStatusCode();
@@ -83,7 +83,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
     private async Task AddToCartAsync(Guid productId, int quantity = 1)
     {
         var response = await _client.PostAsJsonAsync(
-            "/api/cart/items",
+            "/api/v1/cart/items",
             new AddCartItemRequest(productId, quantity));
         response.EnsureSuccessStatusCode();
     }
@@ -110,7 +110,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         await AddToCartAsync(product.Id);
 
         var response = await _client.PostAsJsonAsync(
-            "/api/checkout",
+            "/api/v1/checkout",
             new CheckoutRequest(address.Id, "CashOnDelivery"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -134,7 +134,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         await AddToCartAsync(product.Id);
 
         var response = await _client.PostAsJsonAsync(
-            "/api/checkout",
+            "/api/v1/checkout",
             new CheckoutRequest(address.Id, "Card"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -147,7 +147,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
     public async Task Checkout_WhenUnauthenticated_Returns401()
     {
         var response = await _client.PostAsJsonAsync(
-            "/api/checkout",
+            "/api/v1/checkout",
             new CheckoutRequest(Guid.NewGuid(), "CashOnDelivery"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -159,7 +159,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         await RegisterAndAuthorizeAsync();
 
         var response = await _client.PostAsJsonAsync(
-            "/api/checkout",
+            "/api/v1/checkout",
             new CheckoutRequest(Guid.NewGuid(), "BitcoinOrSomething"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -172,10 +172,10 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         var userId  = GetUserIdFromToken(token);
         var address = await SeedAddressAsync(userId);
         
-        await _client.GetAsync("/api/cart");
+        await _client.GetAsync("/api/v1/cart");
         
         var response = await _client.PostAsJsonAsync(
-            "/api/checkout",
+            "/api/v1/checkout",
             new CheckoutRequest(address.Id, "CashOnDelivery"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -191,10 +191,10 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         var product = await SeedProductAsync();
         var address = await SeedAddressAsync(userId);
         await AddToCartAsync(product.Id);
-        await _client.PostAsJsonAsync("/api/checkout",
+        await _client.PostAsJsonAsync("/api/v1/checkout",
             new CheckoutRequest(address.Id, "CashOnDelivery"));
 
-        var response = await _client.GetAsync("/api/orders");
+        var response = await _client.GetAsync("/api/v1/orders");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -207,7 +207,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
     [Fact]
     public async Task GetOrders_WhenUnauthenticated_Returns401()
     {
-        var response = await _client.GetAsync("/api/orders");
+        var response = await _client.GetAsync("/api/v1/orders");
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -223,10 +223,10 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         await AddToCartAsync(product.Id);
 
         var checkoutResponse = await (await _client.PostAsJsonAsync(
-            "/api/checkout", new CheckoutRequest(address.Id, "CashOnDelivery")))
+            "/api/v1/checkout", new CheckoutRequest(address.Id, "CashOnDelivery")))
             .Content.ReadFromJsonAsync<CheckoutResponse>();
 
-        var response = await _client.GetAsync($"/api/orders/{checkoutResponse!.OrderId}");
+        var response = await _client.GetAsync($"/api/v1/orders/{checkoutResponse!.OrderId}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -242,7 +242,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         // User A places order
         await RegisterAndAuthorizeAsync("a@example.com");
         var userAId = GetUserIdFromToken(
-            (await (await _client.PostAsJsonAsync("/api/auth/login",
+            (await (await _client.PostAsJsonAsync("/api/v1/auth/login",
                 new LoginRequest("a@example.com", "Password1")))
                 .Content.ReadFromJsonAsync<AuthResponse>())!.AccessToken);
 
@@ -250,14 +250,14 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         var addressA = await SeedAddressAsync(userAId);
         await AddToCartAsync(product.Id);
         var checkout = await (await _client.PostAsJsonAsync(
-            "/api/checkout", new CheckoutRequest(addressA.Id, "CashOnDelivery")))
+            "/api/v1/checkout", new CheckoutRequest(addressA.Id, "CashOnDelivery")))
             .Content.ReadFromJsonAsync<CheckoutResponse>();
 
         // User B tries to view it
         _client.DefaultRequestHeaders.Authorization = null;
         await RegisterAndAuthorizeAsync("b@example.com");
 
-        var response = await _client.GetAsync($"/api/orders/{checkout!.OrderId}");
+        var response = await _client.GetAsync($"/api/v1/orders/{checkout!.OrderId}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -274,11 +274,11 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
         await AddToCartAsync(product.Id);
 
         var checkout = await (await _client.PostAsJsonAsync(
-            "/api/checkout", new CheckoutRequest(address.Id, "CashOnDelivery")))
+            "/api/v1/checkout", new CheckoutRequest(address.Id, "CashOnDelivery")))
             .Content.ReadFromJsonAsync<CheckoutResponse>();
 
         var response = await _client.PostAsync(
-            $"/api/orders/{checkout!.OrderId}/cancel", null);
+            $"/api/v1/orders/{checkout!.OrderId}/cancel", null);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -297,7 +297,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
             .GetSessionStatusAsync("cs_test_session", Arg.Any<CancellationToken>())
             .Returns(new StripeSessionStatus("complete", "customer@example.com"));
 
-        var response = await _client.GetAsync("/api/checkout/session-status?sessionId=cs_test_session");
+        var response = await _client.GetAsync("/api/v1/checkout/session-status?sessionId=cs_test_session");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -309,7 +309,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
     [Fact]
     public async Task GetCheckoutSessionStatus_WhenUnauthenticated_Returns401()
     {
-        var response = await _client.GetAsync("/api/checkout/session-status?sessionId=any");
+        var response = await _client.GetAsync("/api/v1/checkout/session-status?sessionId=any");
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -317,7 +317,7 @@ public sealed class OrderApiTests(ApiFactory factory) : IAsyncLifetime
     public async Task CancelOrder_WhenUnauthenticated_Returns401()
     {
         var response = await _client.PostAsync(
-            $"/api/orders/{Guid.NewGuid()}/cancel", null);
+            $"/api/v1/orders/{Guid.NewGuid()}/cancel", null);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }

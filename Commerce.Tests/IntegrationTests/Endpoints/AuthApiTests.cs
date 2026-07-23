@@ -30,7 +30,7 @@ public sealed class AuthApiTests(ApiFactory factory)
     [Fact]
     public async Task Register_Returns201_AndTokens()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register",
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest("Adam Hassan", "adam@example.com", "Password1", Phone: null));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -45,10 +45,10 @@ public sealed class AuthApiTests(ApiFactory factory)
     [Fact]
     public async Task Login_Returns200_AndTokens()
     {
-        await _client.PostAsJsonAsync("/api/auth/register",
+        await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest("Adam Hassan", "adam@example.com", "Password1", Phone: null));
 
-        var response = await _client.PostAsJsonAsync("/api/auth/login",
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/login",
             new LoginRequest("adam@example.com", "Password1"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -62,7 +62,7 @@ public sealed class AuthApiTests(ApiFactory factory)
     [Fact]
     public async Task LogoutAll_RequiresBearerToken_Returns204()
     {
-        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register",
+        var registerResponse = await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest("Adam Hassan", "adam@example.com", "Password1", Phone: null));
 
         var registerBody = await registerResponse.Content.ReadFromJsonAsync<AuthResponse>();
@@ -71,7 +71,7 @@ public sealed class AuthApiTests(ApiFactory factory)
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", registerBody.AccessToken);
 
-        var response = await _client.PostAsync("/api/auth/logout-all", content: null);
+        var response = await _client.PostAsync("/api/v1/auth/logout-all", content: null);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }

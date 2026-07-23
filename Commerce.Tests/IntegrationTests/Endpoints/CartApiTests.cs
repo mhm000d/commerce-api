@@ -32,7 +32,7 @@ public sealed class CartApiTests(ApiFactory factory)
     private async Task<string> RegisterAndAuthorizeAsync(
         string email = "user@example.com", string name = "Test User")
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register",
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest(name, email, "Password1", Phone: null));
 
         response.EnsureSuccessStatusCode();
@@ -63,7 +63,7 @@ public sealed class CartApiTests(ApiFactory factory)
     private async Task<CartResponse> AddItemAsync(Guid productId, int quantity = 1)
     {
         var response = await _client.PostAsJsonAsync(
-            "/api/cart/items",
+            "/api/v1/cart/items",
             new AddCartItemRequest(productId, quantity));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -77,7 +77,7 @@ public sealed class CartApiTests(ApiFactory factory)
     {
         await RegisterAndAuthorizeAsync();
 
-        var response = await _client.GetAsync("/api/cart");
+        var response = await _client.GetAsync("/api/v1/cart");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -90,7 +90,7 @@ public sealed class CartApiTests(ApiFactory factory)
     [Fact]
     public async Task GetCart_WhenUnauthenticated_Returns401()
     {
-        var response = await _client.GetAsync("/api/cart");
+        var response = await _client.GetAsync("/api/v1/cart");
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -102,7 +102,7 @@ public sealed class CartApiTests(ApiFactory factory)
 
         await AddItemAsync(product.Id, quantity: 3);
 
-        var response = await _client.GetAsync("/api/cart");
+        var response = await _client.GetAsync("/api/v1/cart");
         var body = await response.Content.ReadFromJsonAsync<CartResponse>();
 
         body!.Subtotal.ShouldBe(60m); // 20 * 3
@@ -119,7 +119,7 @@ public sealed class CartApiTests(ApiFactory factory)
         var product = await SeedProductAsync(stock: 5, price: 49.99m);
 
         var response = await _client.PostAsJsonAsync(
-            "/api/cart/items",
+            "/api/v1/cart/items",
             new AddCartItemRequest(product.Id, Quantity: 2));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -139,7 +139,7 @@ public sealed class CartApiTests(ApiFactory factory)
         var product = await SeedProductAsync();
 
         var response = await _client.PostAsJsonAsync(
-            "/api/cart/items",
+            "/api/v1/cart/items",
             new AddCartItemRequest(product.Id, Quantity: 1));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -151,7 +151,7 @@ public sealed class CartApiTests(ApiFactory factory)
         await RegisterAndAuthorizeAsync();
 
         var response = await _client.PostAsJsonAsync(
-            "/api/cart/items",
+            "/api/v1/cart/items",
             new AddCartItemRequest(Guid.NewGuid(), Quantity: 1));
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -164,7 +164,7 @@ public sealed class CartApiTests(ApiFactory factory)
         var product = await SeedProductAsync(stock: 2);
 
         var response = await _client.PostAsJsonAsync(
-            "/api/cart/items",
+            "/api/v1/cart/items",
             new AddCartItemRequest(product.Id, Quantity: 5));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -193,7 +193,7 @@ public sealed class CartApiTests(ApiFactory factory)
         await AddItemAsync(product.Id, quantity: 2);
 
         var response = await _client.PostAsJsonAsync(
-            "/api/cart/items",
+            "/api/v1/cart/items",
             new AddCartItemRequest(product.Id, Quantity: 2));
 
         // 2 + 2 = 4 > stock of 3
@@ -212,7 +212,7 @@ public sealed class CartApiTests(ApiFactory factory)
         var itemId = cartAfterAdd.Items.Single().Id;
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/cart/items/{itemId}",
+            $"/api/v1/cart/items/{itemId}",
             new UpdateCartItemRequest(Quantity: 7));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -225,7 +225,7 @@ public sealed class CartApiTests(ApiFactory factory)
     public async Task PutItem_WhenUnauthenticated_Returns401()
     {
         var response = await _client.PutAsJsonAsync(
-            $"/api/cart/items/{Guid.NewGuid()}",
+            $"/api/v1/cart/items/{Guid.NewGuid()}",
             new UpdateCartItemRequest(Quantity: 1));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -239,7 +239,7 @@ public sealed class CartApiTests(ApiFactory factory)
         await AddItemAsync(product.Id, quantity: 1); // ensure cart exists
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/cart/items/{Guid.NewGuid()}",
+            $"/api/v1/cart/items/{Guid.NewGuid()}",
             new UpdateCartItemRequest(Quantity: 1));
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -255,7 +255,7 @@ public sealed class CartApiTests(ApiFactory factory)
         var itemId = cartAfterAdd.Items.Single().Id;
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/cart/items/{itemId}",
+            $"/api/v1/cart/items/{itemId}",
             new UpdateCartItemRequest(Quantity: 5)); // exceeds stock of 3
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -273,7 +273,7 @@ public sealed class CartApiTests(ApiFactory factory)
         var itemId = cartAfterAdd.Items.Single().Id;
 
         var response = await _client.PutAsJsonAsync(
-            $"/api/cart/items/{itemId}",
+            $"/api/v1/cart/items/{itemId}",
             new UpdateCartItemRequest(Quantity: invalidQuantity));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -290,12 +290,12 @@ public sealed class CartApiTests(ApiFactory factory)
         var cartAfterAdd = await AddItemAsync(product.Id, quantity: 1);
         var itemId = cartAfterAdd.Items.Single().Id;
 
-        var response = await _client.DeleteAsync($"/api/cart/items/{itemId}");
+        var response = await _client.DeleteAsync($"/api/v1/cart/items/{itemId}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Verify via GET
-        var getResponse = await _client.GetAsync("/api/cart");
+        var getResponse = await _client.GetAsync("/api/v1/cart");
         var cart = await getResponse.Content.ReadFromJsonAsync<CartResponse>();
         cart!.Items.ShouldBeEmpty();
     }
@@ -303,7 +303,7 @@ public sealed class CartApiTests(ApiFactory factory)
     [Fact]
     public async Task DeleteItem_WhenUnauthenticated_Returns401()
     {
-        var response = await _client.DeleteAsync($"/api/cart/items/{Guid.NewGuid()}");
+        var response = await _client.DeleteAsync($"/api/v1/cart/items/{Guid.NewGuid()}");
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
@@ -320,7 +320,7 @@ public sealed class CartApiTests(ApiFactory factory)
         _client.DefaultRequestHeaders.Authorization = null;
         await RegisterAndAuthorizeAsync("b@example.com", "User B");
 
-        var response = await _client.DeleteAsync($"/api/cart/items/{itemAId}");
+        var response = await _client.DeleteAsync($"/api/v1/cart/items/{itemAId}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -334,11 +334,11 @@ public sealed class CartApiTests(ApiFactory factory)
         var product = await SeedProductAsync();
         await AddItemAsync(product.Id, quantity: 1);
 
-        var response = await _client.DeleteAsync("/api/cart");
+        var response = await _client.DeleteAsync("/api/v1/cart");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        var cart = await (await _client.GetAsync("/api/cart"))
+        var cart = await (await _client.GetAsync("/api/v1/cart"))
             .Content.ReadFromJsonAsync<CartResponse>();
         cart!.Items.ShouldBeEmpty();
     }
@@ -349,7 +349,7 @@ public sealed class CartApiTests(ApiFactory factory)
         // Idempotency — user has never touched their cart
         await RegisterAndAuthorizeAsync();
 
-        var response = await _client.DeleteAsync("/api/cart");
+        var response = await _client.DeleteAsync("/api/v1/cart");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -357,7 +357,7 @@ public sealed class CartApiTests(ApiFactory factory)
     [Fact]
     public async Task DeleteCart_WhenUnauthenticated_Returns401()
     {
-        var response = await _client.DeleteAsync("/api/cart");
+        var response = await _client.DeleteAsync("/api/v1/cart");
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 }
