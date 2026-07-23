@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using Commerce.Api.Mappings;
 using Commerce.Application.Services.Carts;
 using Commerce.Contracts.Carts;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Commerce.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class CartController(ICartService cartService) : ControllerBase

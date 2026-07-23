@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Commerce.Application.Database;
 using Commerce.Application.Models;
 using Commerce.Application.Services.Carts;
@@ -10,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Commerce.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 public class WebhookController(
     AppDbContext dbContext,
     ICartService cartService,

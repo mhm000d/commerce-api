@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using Commerce.Api.Mappings;
 using Commerce.Application.Services.Auth;
 using Commerce.Contracts.Auth;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Commerce.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 public class AuthController(IAuthService authService) : ControllerBase
 {
     [EnableRateLimiting(RateLimitPolicies.Auth)]

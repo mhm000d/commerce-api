@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using Commerce.Api.Mappings;
 using Commerce.Contracts.Account;
 using Commerce.Application.Services.Account;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Commerce.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class AccountController(IAccountService accountService) : ControllerBase

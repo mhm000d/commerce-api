@@ -179,20 +179,4 @@ public class ProductService(
 
         logger.LogInformation("Product deleted. ProductId={ProductId}", id);
     }
-
-    // ── Private helpers ───────────────────────────────────────────────────────
-
-    private static IEnumerable<string> GetSearchTerms(string? search)
-    {
-        if (string.IsNullOrWhiteSpace(search))
-            return [];
-
-        return search.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    }
-
-    private static string EscapeLikePattern(string value) =>
-        value
-            .Replace("\\", "\\\\")
-            .Replace("%", "\\%")
-            .Replace("_", "\\_");
 }

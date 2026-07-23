@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Commerce.Api.Mappings;
 using Commerce.Application.Models;
 using Commerce.Application.Services.ProductImages;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Commerce.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 public class ProductImagesController(
     IProductImageService productImageService) : ControllerBase
 {

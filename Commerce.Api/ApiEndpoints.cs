@@ -2,7 +2,7 @@ namespace Commerce.Api;
 
 public static class ApiEndpoints
 {
-    private const string ApiBase = "api";
+    private const string ApiBase = "api/v{version:apiVersion}";
 
     // ── Products Endpoints ─────────────────────────────────────────────────
     public static class Products

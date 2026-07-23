@@ -1,8 +1,9 @@
+using Asp.Versioning;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
-using Commerce.Api;
-using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Commerce.Api.Startup;
 
@@ -21,7 +22,20 @@ public static class ApiServiceExtensions
 {
     public static IServiceCollection AddApiDocumentation(this IServiceCollection services)
     {
+        services.AddApiVersioning(options =>
+        {
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.AssumeDefaultVersionWhenUnspecified = true;
+            options.ReportApiVersions = true;
+            options.ApiVersionReader = new UrlSegmentApiVersionReader();
+        }).AddApiExplorer(options =>
+        {
+            options.GroupNameFormat = "'v'VVV";
+            options.SubstituteApiVersionInUrl = true;
+        });
+
         services.AddEndpointsApiExplorer();
+        services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureVersionedSwaggerOptions>();
         services.AddSwaggerGen(options =>
         {
             options.SupportNonNullableReferenceTypes();
@@ -38,7 +52,7 @@ public static class ApiServiceExtensions
 
             options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
-                [new OpenApiSecuritySchemeReference("Bearer", document, null)] = []
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = []
             });
         });
 

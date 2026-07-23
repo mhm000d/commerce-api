@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Commerce.Api.Mappings;
 using Commerce.Application.Models;
 using Commerce.Application.Services.Products;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Commerce.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 public class ProductsController(IProductService productService) : ControllerBase
 {
     [HttpGet(ApiEndpoints.Products.Get)]

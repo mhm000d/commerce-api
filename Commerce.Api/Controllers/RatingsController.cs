@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using Commerce.Api.Mappings;
 using Commerce.Application.Services.Ratings;
 using Commerce.Contracts.Ratings;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Commerce.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 public class RatingsController(IRatingService ratingService) : ControllerBase
 {
     [Authorize]
