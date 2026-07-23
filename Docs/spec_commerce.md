@@ -36,6 +36,7 @@ The project is structured to show production-oriented backend engineering: clear
 - Payment integration through Stripe embedded Checkout, webhook signature verification, idempotent webhook storage, session status checks, and refund support.
 - Transactional email pipeline using persisted email notifications, HTML template rendering, retry tracking, SMTP for development, and AWS SES for production.
 - Background processing with Hangfire for email delivery, payment timeout handling, and cleanup of stale tokens and failed notifications.
+- API versioning with versioned routing and dynamic Swagger document generation per API version.
 - Operational hardening with configurable CORS, built-in rate limiting, a `/health` endpoint, HSTS outside development, and Swagger JWT Bearer support.
 - PostgreSQL schema design with EF Core migrations, check constraints, indexes, JSON-owned values, global query filters, and optimistic concurrency through PostgreSQL `xmin`.
 - Test strategy using xUnit, Testcontainers, Respawn, NSubstitute, Shouldly, and focused unit/integration test coverage.
@@ -239,6 +240,7 @@ The API includes production-oriented startup defaults:
 - `/health` endpoint for container and hosting probes.
 - HSTS outside development.
 - Swagger UI Bearer authentication support for testing protected endpoints.
+- API Explorer-driven versioned Swagger documents with version-group separation.
 
 Rate limiting is disabled in the `Testing` environment.
 
@@ -300,99 +302,99 @@ Notable modeling decisions:
 
 ## API Reference
 
-All endpoints are prefixed with `/api`.
+All endpoints are prefixed with `/api/v{version}`. The examples below use `v1`.
 
 ### Auth
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/auth/register` | Register a customer and issue tokens |
-| `POST` | `/api/auth/login` | Authenticate and issue tokens |
-| `POST` | `/api/auth/refresh` | Rotate refresh token and issue a new token pair |
-| `POST` | `/api/auth/logout` | Revoke one refresh token |
-| `POST` | `/api/auth/logout-all` | Revoke all active user sessions |
-| `POST` | `/api/auth/forgot-password` | Queue password reset email |
-| `POST` | `/api/auth/reset-password` | Reset password with a valid reset token |
+| `POST` | `/api/v1/auth/register` | Register a customer and issue tokens |
+| `POST` | `/api/v1/auth/login` | Authenticate and issue tokens |
+| `POST` | `/api/v1/auth/refresh` | Rotate refresh token and issue a new token pair |
+| `POST` | `/api/v1/auth/logout` | Revoke one refresh token |
+| `POST` | `/api/v1/auth/logout-all` | Revoke all active user sessions |
+| `POST` | `/api/v1/auth/forgot-password` | Queue password reset email |
+| `POST` | `/api/v1/auth/reset-password` | Reset password with a valid reset token |
 
 ### Account
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/account/profile` | Get the current user's profile |
-| `PUT` | `/api/account/profile` | Update the current user's profile |
-| `POST` | `/api/account/change-password` | Change the current user's password |
+| `GET` | `/api/v1/account/profile` | Get the current user's profile |
+| `PUT` | `/api/v1/account/profile` | Update the current user's profile |
+| `POST` | `/api/v1/account/change-password` | Change the current user's password |
 
 ### Products
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/products?page=&pageSize=&category=&search=&sortBy=` | List products with pagination, search, filtering, and sorting |
-| `GET` | `/api/products/{id}` | Get product details |
-| `POST` | `/api/admin/products` | Create product, admin only |
-| `PUT` | `/api/admin/products/{id}` | Update product, admin only |
-| `DELETE` | `/api/admin/products/{id}` | Soft-delete product, admin only |
+| `GET` | `/api/v1/products?page=&pageSize=&category=&search=&sortBy=` | List products with pagination, search, filtering, and sorting |
+| `GET` | `/api/v1/products/{id}` | Get product details |
+| `POST` | `/api/v1/admin/products` | Create product, admin only |
+| `PUT` | `/api/v1/admin/products/{id}` | Update product, admin only |
+| `DELETE` | `/api/v1/admin/products/{id}` | Soft-delete product, admin only |
 
 ### Product Images
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/admin/products/{productId}/images` | Upload product image, admin only |
-| `GET` | `/api/products/{productId}/images/{imageId}` | Get image metadata |
-| `DELETE` | `/api/admin/products/{productId}/images/{imageId}` | Delete image, admin only |
-| `PUT` | `/api/admin/products/{productId}/images/{imageId}/set-primary` | Set primary image, admin only |
+| `POST` | `/api/v1/admin/products/{productId}/images` | Upload product image, admin only |
+| `GET` | `/api/v1/products/{productId}/images/{imageId}` | Get image metadata |
+| `DELETE` | `/api/v1/admin/products/{productId}/images/{imageId}` | Delete image, admin only |
+| `PUT` | `/api/v1/admin/products/{productId}/images/{imageId}/set-primary` | Set primary image, admin only |
 
 ### Ratings
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/products/{productId}/ratings` | Create rating, authenticated |
-| `GET` | `/api/products/{productId}/ratings` | List product ratings |
-| `PUT` | `/api/ratings/{id}` | Update own rating |
-| `DELETE` | `/api/ratings/{id}` | Delete own rating |
+| `POST` | `/api/v1/products/{productId}/ratings` | Create rating, authenticated |
+| `GET` | `/api/v1/products/{productId}/ratings` | List product ratings |
+| `PUT` | `/api/v1/ratings/{id}` | Update own rating |
+| `DELETE` | `/api/v1/ratings/{id}` | Delete own rating |
 
 ### Addresses
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/addresses` | List current user's addresses |
-| `POST` | `/api/addresses` | Create address |
-| `PUT` | `/api/addresses/{id}` | Update own address |
-| `DELETE` | `/api/addresses/{id}` | Delete own address |
+| `GET` | `/api/v1/addresses` | List current user's addresses |
+| `POST` | `/api/v1/addresses` | Create address |
+| `PUT` | `/api/v1/addresses/{id}` | Update own address |
+| `DELETE` | `/api/v1/addresses/{id}` | Delete own address |
 
 ### Cart
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/cart` | Get or create current user's cart |
-| `POST` | `/api/cart/items` | Add item |
-| `PUT` | `/api/cart/items/{id}` | Update item quantity |
-| `DELETE` | `/api/cart/items/{id}` | Remove item |
-| `DELETE` | `/api/cart` | Clear cart |
+| `GET` | `/api/v1/cart` | Get or create current user's cart |
+| `POST` | `/api/v1/cart/items` | Add item |
+| `PUT` | `/api/v1/cart/items/{id}` | Update item quantity |
+| `DELETE` | `/api/v1/cart/items/{id}` | Remove item |
+| `DELETE` | `/api/v1/cart` | Clear cart |
 
 ### Checkout And Orders
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/checkout` | Create order from cart |
-| `GET` | `/api/checkout/session-status?sessionId=...` | Get Stripe checkout session status |
-| `GET` | `/api/orders` | List current user's orders with pagination |
-| `GET` | `/api/orders/{id}` | Get current user's order details |
-| `POST` | `/api/orders/{id}/cancel` | Cancel current user's order when allowed |
-| `POST` | `/api/orders/{id}/retry-payment` | Retry payment for an order when allowed |
+| `POST` | `/api/v1/checkout` | Create order from cart |
+| `GET` | `/api/v1/checkout/session-status?sessionId=...` | Get Stripe checkout session status |
+| `GET` | `/api/v1/orders` | List current user's orders with pagination |
+| `GET` | `/api/v1/orders/{id}` | Get current user's order details |
+| `POST` | `/api/v1/orders/{id}/cancel` | Cancel current user's order when allowed |
+| `POST` | `/api/v1/orders/{id}/retry-payment` | Retry payment for an order when allowed |
 
 ### Admin Orders
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/admin/orders` | List all orders with pagination, admin only |
-| `GET` | `/api/admin/orders/{id}` | Get order details, admin only |
-| `PUT` | `/api/admin/orders/{id}/status` | Move order through valid state transition, admin only |
+| `GET` | `/api/v1/admin/orders` | List all orders with pagination, admin only |
+| `GET` | `/api/v1/admin/orders/{id}` | Get order details, admin only |
+| `PUT` | `/api/v1/admin/orders/{id}/status` | Move order through valid state transition, admin only |
 
 ### Webhooks
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/webhooks/stripe` | Receive Stripe checkout events |
+| `POST` | `/api/v1/webhooks/stripe` | Receive Stripe checkout events |
 
 ## Getting Started
 
