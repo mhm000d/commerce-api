@@ -20,6 +20,10 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .IsRequired()
             .HasMaxLength(200);
 
+        builder.Property(p => p.Slug)
+            .IsRequired()
+            .HasMaxLength(220);
+
         builder.Property(p => p.Description)
             .IsRequired()
             .HasMaxLength(2000);
@@ -91,6 +95,11 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.HasIndex(p => p.AverageRating)
             .IsDescending()
             .HasDatabaseName("IX_Product_AverageRating");
+
+        builder.HasIndex(p => p.Slug)
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false")
+            .HasDatabaseName("IX_Product_Slug_Unique_Active");
 
         // ── Relationships ─────────────────────────────────────────────
         builder.HasMany(p => p.Images)

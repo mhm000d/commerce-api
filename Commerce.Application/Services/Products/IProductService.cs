@@ -5,6 +5,7 @@ namespace Commerce.Application.Services.Products;
 public interface IProductService
 {
     Task<Product> GetAsync(Guid id, CancellationToken ct = default);
+    Task<Product> GetBySlugAsync(string slug, CancellationToken ct = default);
     Task<(IEnumerable<Product> Products, int TotalCount)> GetAllAsync(
         ProductCatalogQuery query,
         CancellationToken ct = default);

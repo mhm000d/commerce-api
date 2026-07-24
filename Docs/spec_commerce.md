@@ -59,7 +59,7 @@ The project is structured to show production-oriented backend engineering: clear
 ### Product Catalog
 
 - Public product listing and product detail endpoints.
-- Product categories, price, stock, average rating, rating count, specifications, and images.
+- Product categories, slug, price, stock, average rating, rating count, specifications, and images.
 - Product specifications stored as JSON-owned values.
 - Soft delete for products through a global EF Core query filter.
 - Admin-only product create, update, and delete operations.
@@ -329,10 +329,26 @@ All endpoints are prefixed with `/api/v{version}`. The examples below use `v1`.
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/api/v1/products?page=&pageSize=&category=&search=&sortBy=` | List products with pagination, search, filtering, and sorting |
-| `GET` | `/api/v1/products/{id}` | Get product details |
+| `GET` | `/api/v1/products/{identifier}` | Get product details by ID or Slug |
 | `POST` | `/api/v1/admin/products` | Create product, admin only |
 | `PUT` | `/api/v1/admin/products/{id}` | Update product, admin only |
 | `DELETE` | `/api/v1/admin/products/{id}` | Soft-delete product, admin only |
+
+Product endpoint notes:
+
+- `GET /api/v1/products/{identifier}` accepts either a product `id` (GUID) or a product `slug`.
+- If no active product matches the provided identifier, the API returns `404 Not Found`.
+- Slugs are normalized to lowercase, converted to hyphen-separated format, and stored uniquely per active product.
+
+Product payload contracts:
+
+- `ProductRequest`
+  - `slug` is optional. When omitted or blank, a slug is generated from product name.
+  - When provided, slug is normalized and de-duplicated (for example by appending `-2`, `-3`, and so on when needed).
+- `ProductResponse`
+  - Includes `slug` in addition to `id`, name, description, category, pricing, ratings, stock, images, and specifications.
+- `ProductsResponse`
+  - Includes `slug` in addition to `id`, name, category, pricing, ratings, and primary image URL.
 
 ### Product Images
 

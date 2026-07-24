@@ -4,6 +4,7 @@ namespace Commerce.Contracts.Products;
 
 public record ProductResponse(
     Guid Id,
+    string Slug,
     string Name,
     string Description,
     decimal Price,

@@ -562,6 +562,7 @@ public static class DbSeeder
         return new Product
         {
             Id = id,
+            Slug = Product.NormalizeSlug(name),
             Name = name,
             Description = description,
             Price = price,

@@ -16,9 +16,12 @@ public class ProductsController(IProductService productService) : ControllerBase
     [HttpGet(ApiEndpoints.Products.Get)]
     [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ProductResponse>> Get([FromRoute] Guid id, CancellationToken ct)
+    public async Task<ActionResult<ProductResponse>> Get([FromRoute] string identifier, CancellationToken ct)
     {
-        var product = await productService.GetAsync(id, ct);
+        var product = Guid.TryParse(identifier, out var id)
+            ? await productService.GetAsync(id, ct)
+            : await productService.GetBySlugAsync(identifier, ct);
+
         return Ok(product.ToResponse());
     }
 

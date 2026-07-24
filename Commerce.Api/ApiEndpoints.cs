@@ -9,7 +9,7 @@ public static class ApiEndpoints
     {
         private const string Base = $"{ApiBase}/products";
 
-        public const string Get = $"{Base}/{{id:guid}}";
+        public const string Get = $"{Base}/{{identifier}}";
         public const string GetAll = Base;
     }
 

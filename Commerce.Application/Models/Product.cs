@@ -1,10 +1,12 @@
 using NpgsqlTypes;
+using System.Text.RegularExpressions;
 
 namespace Commerce.Application.Models;
 
-public class Product
+public partial class Product
 {
     public required Guid Id { get; init; }
+    public required string Slug { get; set; }
     public required string Name { get; set; }
     public required string Description { get; set; }
     public required decimal Price { get; set; }
@@ -30,11 +32,13 @@ public class Product
         string? description,
         decimal price,
         int stockQuantity,
-        Category category)
+        Category category,
+        string? slug = null)
     {
         return new Product
         {
             Id = Guid.NewGuid(),
+            Slug = slug ?? GenerateDefaultSlug(name),
             Name = name,
             Description = description!,
             Price = price,
@@ -55,6 +59,40 @@ public class Product
         StockQuantity = stockQuantity;
         Category = category;
     }
+
+    public void UpdateSlug(string slug)
+    {
+        Slug = slug;
+    }
+
+    public static string NormalizeSlug(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        // 1. Replace non-alphanumeric (except space and hyphen) with empty string
+        var clean = SlugRegex().Replace(value, string.Empty);
+
+        // 2. Convert to lower case and replace spaces with hyphens
+        var slugged = clean.ToLowerInvariant().Replace(" ", "-");
+
+        // 3. Replace multiple hyphens with a single one and trim
+        return MultipleHyphensRegex().Replace(slugged, "-").Trim('-');
+    }
+
+    private static string GenerateDefaultSlug(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return $"product-{Guid.NewGuid():N}";
+
+        return $"{NormalizeSlug(value)}-{Guid.NewGuid().ToString("N")[..8]}";
+    }
+
+    [GeneratedRegex("[^0-9A-Za-z _-]", RegexOptions.NonBacktracking)]
+    private static partial Regex SlugRegex();
+
+    [GeneratedRegex("-+", RegexOptions.NonBacktracking)]
+    private static partial Regex MultipleHyphensRegex();
 
     public void SetSpecifications(IEnumerable<ProductSpecification> specs)
     {

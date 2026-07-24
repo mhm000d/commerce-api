@@ -108,4 +108,52 @@ public sealed class ProductsApiTests(ApiFactory factory) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
+
+    // ── GET /api/products/{identifier} ───────────────────────────────────────
+
+    [Fact]
+    public async Task GetProduct_WithValidId_ReturnsProduct()
+    {
+        var product = await SeedProductAsync("Target Product", "A product to find", 99.99m, Category.Laptops);
+
+        var response = await _client.GetAsync($"/api/v1/products/{product.Id}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<ProductResponse>();
+        body.ShouldNotBeNull();
+        body.Id.ShouldBe(product.Id);
+        body.Name.ShouldBe("Target Product");
+    }
+
+    [Fact]
+    public async Task GetProduct_WithValidSlug_ReturnsProduct()
+    {
+        var product = await SeedProductAsync("Target Product Two", "Another product", 49.99m, Category.Laptops);
+
+        var response = await _client.GetAsync($"/api/v1/products/{product.Slug}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<ProductResponse>();
+        body.ShouldNotBeNull();
+        body.Id.ShouldBe(product.Id);
+        body.Slug.ShouldBe(product.Slug);
+    }
+
+    [Fact]
+    public async Task GetProduct_WithNonExistentId_Returns404()
+    {
+        var nonExistentId = Guid.NewGuid();
+
+        var response = await _client.GetAsync($"/api/v1/products/{nonExistentId}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetProduct_WithNonExistentSlug_Returns404()
+    {
+        var response = await _client.GetAsync("/api/v1/products/non-existent-slug-12345");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 }

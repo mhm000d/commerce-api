@@ -13,6 +13,12 @@ public class ProductValidator : AbstractValidator<Product>
             .MaximumLength(200)
             .WithMessage("Product name must not exceed 200 characters.");
 
+        RuleFor(x => x.Slug)
+            .NotEmpty()
+            .WithMessage("Product slug is required.")
+            .MaximumLength(220)
+            .WithMessage("Product slug must not exceed 220 characters.");
+
         RuleFor(x => x.Description)
             .NotEmpty()
             .WithMessage("Product description is required.")

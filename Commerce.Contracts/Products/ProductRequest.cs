@@ -6,5 +6,6 @@ public record ProductRequest(
     decimal Price,
     int StockQuantity,
     string Category,
-    IReadOnlyList<ProductSpecification> Specifications
+    IReadOnlyList<ProductSpecification> Specifications,
+    string? Slug = null
 );

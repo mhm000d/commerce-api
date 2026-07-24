@@ -4,6 +4,8 @@ using Commerce.Application.Models;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text;
+using ValidationException = Commerce.Application.Exceptions.ValidationException;
 
 namespace Commerce.Application.Services.Products;
 
@@ -19,6 +21,31 @@ public class ProductService(
                    .Include(p => p.Images)
                    .FirstOrDefaultAsync(p => p.Id == id, ct)
                ?? throw new NotFoundException("Product not found.", "PRODUCT_NOT_FOUND");
+    }
+
+    public async Task<Product> GetBySlugAsync(string slug, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+            throw new ValidationException("Slug is required.", "SLUG_REQUIRED");
+
+        var normalizedSlug = NormalizeSlug(slug);
+
+        // 1. Try normalized slug
+        var product = await dbContext.Products
+            .AsNoTracking()
+            .Include(p => p.Images)
+            .FirstOrDefaultAsync(p => p.Slug == normalizedSlug, ct);
+
+        // 2. Fallback to raw slug (backward compatibility for legacy slugs with special characters)
+        if (product == null && normalizedSlug != slug)
+        {
+            product = await dbContext.Products
+                .AsNoTracking()
+                .Include(p => p.Images)
+                .FirstOrDefaultAsync(p => p.Slug == slug, ct);
+        }
+
+        return product ?? throw new NotFoundException("Product not found.", "PRODUCT_NOT_FOUND");
     }
 
     public async Task<(IEnumerable<Product> Products, int TotalCount)> GetAllAsync(
@@ -124,12 +151,16 @@ public class ProductService(
 
     public async Task<Product> CreateAsync(Product product, CancellationToken ct = default)
     {
+        var slugSeed = string.IsNullOrWhiteSpace(product.Slug) ? product.Name : product.Slug;
+        var slug = await GenerateUniqueSlugAsync(slugSeed, ct);
+
         var newProduct = Product.Create(
             product.Name,
             product.Description,
             product.Price,
             product.StockQuantity,
-            product.Category);
+            product.Category,
+            slug);
 
         newProduct.SetSpecifications(product.Specifications);
 
@@ -157,6 +188,17 @@ public class ProductService(
             updatedProduct.StockQuantity,
             updatedProduct.Category
         );
+
+        if (!string.IsNullOrWhiteSpace(updatedProduct.Slug))
+        {
+            var normalizedRequestedSlug = NormalizeSlug(updatedProduct.Slug);
+            if (!string.Equals(existingProduct.Slug, normalizedRequestedSlug, StringComparison.Ordinal))
+            {
+                var uniqueSlug = await GenerateUniqueSlugAsync(normalizedRequestedSlug, ct, existingProduct.Id);
+                existingProduct.UpdateSlug(uniqueSlug);
+            }
+        }
+
         existingProduct.SetSpecifications(updatedProduct.Specifications);
 
         await productValidator.ValidateAndThrowAsync(existingProduct, ct);
@@ -179,4 +221,26 @@ public class ProductService(
 
         logger.LogInformation("Product deleted. ProductId={ProductId}", id);
     }
+
+    private async Task<string> GenerateUniqueSlugAsync(string value, CancellationToken ct, Guid? excludingProductId = null)
+    {
+        var baseSlug = NormalizeSlug(value);
+        if (string.IsNullOrWhiteSpace(baseSlug))
+            baseSlug = $"product-{Guid.NewGuid():N}";
+
+        var slug = baseSlug;
+        var suffix = 2;
+
+        while (await dbContext.Products.AnyAsync(
+                   p => p.Slug == slug && (!excludingProductId.HasValue || p.Id != excludingProductId.Value),
+                   ct))
+        {
+            slug = $"{baseSlug}-{suffix}";
+            suffix++;
+        }
+
+        return slug;
+    }
+
+    private static string NormalizeSlug(string? value) => Product.NormalizeSlug(value);
 }

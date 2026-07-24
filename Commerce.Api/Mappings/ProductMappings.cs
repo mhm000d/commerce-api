@@ -61,6 +61,7 @@ public static class ProductMappings
     {
         return new ProductResponse(
             product.Id,
+            product.Slug,
             product.Name,
             product.Description,
             product.Price,
@@ -87,6 +88,7 @@ public static class ProductMappings
         return products.Select(p =>
             new ProductsResponse(
                 p.Id,
+                p.Slug,
                 p.Name,
                 p.Price,
                 p.AverageRating,
@@ -137,6 +139,7 @@ public static class ProductMappings
         return new Product
         {
             Id = Guid.NewGuid(),
+            Slug = req.Slug ?? string.Empty,
             Name = req.Name,
             Description = req.Description,
             Price = req.Price,
