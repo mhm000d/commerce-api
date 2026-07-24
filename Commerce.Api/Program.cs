@@ -9,6 +9,7 @@ builder.Services.AddApiDocumentation();
 builder.Services.AddConfiguredCors(builder.Configuration);
 builder.Services.AddApiHealthChecks();
 builder.Services.AddConfiguredRateLimiting(builder.Configuration, builder.Environment);
+builder.Services.AddApiOutputCaching();
 
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddApplication(builder.Configuration, builder.Environment);
@@ -19,6 +20,7 @@ var app = builder.Build();
 app.UseApiDocumentation();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseApiSecurity();
+app.UseOutputCache();
 app.UseRequestBodyBuffering();
 app.UseHangfireDashboardAndJobs();
 

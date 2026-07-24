@@ -1,17 +1,21 @@
 using System.Security.Claims;
 using Asp.Versioning;
 using Commerce.Api.Mappings;
+using Commerce.Api.Startup;
 using Commerce.Application.Services.Ratings;
 using Commerce.Contracts.Ratings;
 using Commerce.Contracts.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace Commerce.Api.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
-public class RatingsController(IRatingService ratingService) : ControllerBase
+public class RatingsController(
+    IRatingService ratingService,
+    IOutputCacheStore outputCacheStore) : ControllerBase
 {
     [Authorize]
     [HttpPost(ApiEndpoints.Ratings.PostRating)]
@@ -27,6 +31,7 @@ public class RatingsController(IRatingService ratingService) : ControllerBase
         
         var result = await ratingService.CreateRatingAsync(
             productId, userId, request.Score, request.Comment, ct);
+        await outputCacheStore.EvictByTagAsync(ApiOutputCaching.ProductsTag, ct);
 
         return StatusCode(201, result.ToResponse());
     }
@@ -46,6 +51,7 @@ public class RatingsController(IRatingService ratingService) : ControllerBase
         
         var result = await ratingService.UpdateRatingAsync(
             id, userId, request.Score, request.Comment, ct);
+        await outputCacheStore.EvictByTagAsync(ApiOutputCaching.ProductsTag, ct);
 
         return Ok(result.ToResponse());
     }
@@ -60,6 +66,7 @@ public class RatingsController(IRatingService ratingService) : ControllerBase
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         
         await ratingService.DeleteRatingAsync(id, userId, ct);
+        await outputCacheStore.EvictByTagAsync(ApiOutputCaching.ProductsTag, ct);
         
         return NoContent();
     }

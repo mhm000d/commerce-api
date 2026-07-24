@@ -37,7 +37,7 @@ The project is structured to show production-oriented backend engineering: clear
 - Transactional email pipeline using persisted email notifications, HTML template rendering, retry tracking, SMTP for development, and AWS SES for production.
 - Background processing with Hangfire for email delivery, payment timeout handling, and cleanup of stale tokens and failed notifications.
 - API versioning with versioned routing and dynamic Swagger document generation per API version.
-- Operational hardening with configurable CORS, built-in rate limiting, a `/health` endpoint, HSTS outside development, and Swagger JWT Bearer support.
+- Operational hardening with configurable CORS, built-in rate limiting, output caching for product read endpoints, cache-tag invalidation after product/rating writes, a `/health` endpoint, HSTS outside development, and Swagger JWT Bearer support.
 - PostgreSQL schema design with EF Core migrations, check constraints, indexes, JSON-owned values, global query filters, and optimistic concurrency through PostgreSQL `xmin`.
 - Test strategy using xUnit, Testcontainers, Respawn, NSubstitute, Shouldly, and focused unit/integration test coverage.
 
@@ -59,6 +59,10 @@ The project is structured to show production-oriented backend engineering: clear
 ### Product Catalog
 
 - Public product listing and product detail endpoints.
+- Output caching on public product read endpoints:
+  - Product details: 2-minute TTL, varies by route `identifier`.
+  - Product listings: 1-minute TTL, varies by full query string.
+- Product catalog reads are grouped under a shared `products` cache tag for coordinated eviction.
 - Product categories, slug, price, stock, average rating, rating count, specifications, and images.
 - Product specifications stored as JSON-owned values.
 - Soft delete for products through a global EF Core query filter.
@@ -76,6 +80,7 @@ The project is structured to show production-oriented backend engineering: clear
 ### Ratings
 
 - Authenticated customers can create, update, and delete product ratings.
+- Rating create/update/delete operations evict the shared `products` cache tag so product detail/list responses are refreshed.
 - Public endpoint for reading product ratings.
 - One rating per user per product enforced by a unique database index.
 - Product average rating and rating count are recalculated in the same transaction as rating changes.

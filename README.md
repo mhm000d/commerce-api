@@ -15,6 +15,7 @@ Backend API for a single-seller e-commerce platform built with **ASP.NET Core 10
 * **Order & Payments**: Order status machine, address snapshotting, Stripe webhook processing.
 * **Background Jobs & Email**: Hangfire-driven transactional emails (SES/SMTP), payment timeouts, and cleanups.
 * **Hardened API**: Rate-limiting, global exception middleware, health checks.
+* **Output Caching for Product Reads**: Output caching for product details and listings with automatic invalidation on product and rating changes.
 
 ---
 
@@ -43,6 +44,8 @@ This project demonstrates several production-grade system design patterns:
   * **Worker Separation**: Heavy background operations (cleanups, timeouts, email processing) run in Hangfire, keeping the HTTP thread pool responsive.
 * **Load Hardening**:
   * **Rate Limiting**: Custom rate-limiting policies partitioned by IP/User ID to mitigate brute-force and DDoS attacks.
+  * **Output Caching**: Product details are cached for 2 minutes (vary by route `identifier`) and product listings for 1 minute (vary by query string).
+  * **Cache Invalidation by Tag**: Product and rating write operations evict the shared `products` cache tag to ensure fresh reads.
   * **Health Probes**: Built-in `/health` endpoints for database connection health.
 
 ---

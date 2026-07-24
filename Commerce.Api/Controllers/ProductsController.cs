@@ -1,19 +1,24 @@
 using Asp.Versioning;
 using Commerce.Api.Mappings;
+using Commerce.Api.Startup;
 using Commerce.Application.Models;
 using Commerce.Application.Services.Products;
 using Commerce.Contracts.Common;
 using Commerce.Contracts.Products;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace Commerce.Api.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
-public class ProductsController(IProductService productService) : ControllerBase
+public class ProductsController(
+    IProductService productService,
+    IOutputCacheStore outputCacheStore) : ControllerBase
 {
     [HttpGet(ApiEndpoints.Products.Get)]
+    [OutputCache(PolicyName = ApiOutputCaching.ProductDetailsPolicy)]
     [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProductResponse>> Get([FromRoute] string identifier, CancellationToken ct)
@@ -26,6 +31,7 @@ public class ProductsController(IProductService productService) : ControllerBase
     }
 
     [HttpGet(ApiEndpoints.Products.GetAll)]
+    [OutputCache(PolicyName = ApiOutputCaching.ProductsListPolicy)]
     [ProducesResponseType(typeof(PagedResponse<ProductsResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedResponse<ProductsResponse>>> GetAll(
@@ -50,6 +56,7 @@ public class ProductsController(IProductService productService) : ControllerBase
     public async Task<ActionResult<ProductResponse>> Post([FromBody] ProductRequest request, CancellationToken ct)
     {
         var product = await productService.CreateAsync(request.ToDomain(), ct);
+        await outputCacheStore.EvictByTagAsync(ApiOutputCaching.ProductsTag, ct);
 
         return CreatedAtAction(
             nameof(Get),
@@ -71,6 +78,7 @@ public class ProductsController(IProductService productService) : ControllerBase
         CancellationToken ct)
     {
         var product = await productService.UpdateAsync(id, request.ToDomain(), ct);
+        await outputCacheStore.EvictByTagAsync(ApiOutputCaching.ProductsTag, ct);
         return Ok(product.ToResponse());
     }
 
@@ -83,6 +91,7 @@ public class ProductsController(IProductService productService) : ControllerBase
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         await productService.DeleteAsync(id, ct);
+        await outputCacheStore.EvictByTagAsync(ApiOutputCaching.ProductsTag, ct);
         return NoContent();
     }
 }
